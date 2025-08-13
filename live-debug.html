@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 구글맵 디버깅</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        .log { margin: 5px 0; padding: 5px 10px; border-radius: 3px; }
+        .success { background: #2d4a22; color: #4caf50; }
+        .error { background: #4a2222; color: #f44336; }
+        .warning { background: #4a3922; color: #ff9800; }
+        .info { background: #224a4a; color: #00bcd4; }
+        #testMap { width: 100%; height: 400px; border: 2px solid #333; margin: 20px 0; }
+        .timing { color: #03dac6; font-weight: bold; }
+    </style>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h1>🔍 실시간 Google Maps 디버깅</h1>
+    <div id="logs"></div>
+    <div id="testMap"></div>
+    
+    <button onclick="runFullDebug()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+        🔄 전체 디버깅 실행
+    </button>
+    
+    <script>
+        const startTime = performance.now();
+        const logs = document.getElementById('logs');
+        
+        function log(message, type = 'info', timing = null) {
+            const now = performance.now();
+            const elapsed = timing !== null ? timing.toFixed(0) : (now - startTime).toFixed(0);
+            
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<span class="timing">[${elapsed}ms]</span> ${message}`;
+            logs.appendChild(logDiv);
+            console.log(`[${elapsed}ms] ${message}`);
+            
+            // 자동 스크롤
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function runFullDebug() {
+            logs.innerHTML = '';
+            const debugStart = performance.now();
+            log('🚀 디버깅 시작');
+            
+            // 1. CONFIG 확인
+            const configStart = performance.now();
+            if (window.CONFIG) {
+                log('✅ CONFIG 객체 존재', 'success', performance.now() - configStart);
+                
+                if (CONFIG.GOOGLE_MAPS_API_KEY) {
+                    log(`✅ API 키 확인: ${CONFIG.GOOGLE_MAPS_API_KEY.substring(0, 15)}...`, 'success');
+                    
+                    // validateConfig 함수 테스트
+                    const validateStart = performance.now();
+                    const isValid = validateConfig();
+                    log(`${isValid ? '✅' : '❌'} API 키 검증: ${isValid ? '성공' : '실패'}`, 
+                        isValid ? 'success' : 'error', 
+                        performance.now() - validateStart);
+                } else {
+                    log('❌ API 키가 없습니다', 'error');
+                }
+            } else {
+                log('❌ CONFIG 객체를 찾을 수 없습니다', 'error');
+                return;
+            }
+            
+            // 2. Google Maps API 로드 테스트
+            const apiStart = performance.now();
+            if (window.google && window.google.maps) {
+                log('✅ Google Maps API 이미 로드됨', 'success', performance.now() - apiStart);
+                runMapTest();
+            } else {
+                log('⏳ Google Maps API 로딩 시작', 'info');
+                
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=onApiLoad&loading=async`;
+                script.async = true;
+                
+                script.onload = () => {
+                    log('✅ API 스크립트 로드 완료', 'success', performance.now() - apiStart);
+                };
+                
+                script.onerror = (e) => {
+                    log('❌ API 스크립트 로드 실패', 'error', performance.now() - apiStart);
+                    log(`오류 세부사항: ${e.message || 'Unknown error'}`, 'error');
+                };
+                
+                document.head.appendChild(script);
+            }
+        }
+        
+        // API 로드 완료 콜백
+        window.onApiLoad = function() {
+            log('🎯 Google Maps API 콜백 호출됨', 'success');
+            runMapTest();
+        };
+        
+        function runMapTest() {
+            const mapStart = performance.now();
+            log('🗺️ 지도 생성 테스트 시작', 'info');
+            
+            try {
+                // 지도 생성
+                const map = new google.maps.Map(document.getElementById('testMap'), {
+                    center: { lat: 37.5665, lng: 126.9780 },
+                    zoom: 12,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                });
+                
+                log('✅ 지도 인스턴스 생성 성공', 'success', performance.now() - mapStart);
+                
+                // 마커 테스트
+                const markerStart = performance.now();
+                const landmarks = [
+                    { name: '경복궁', lat: 37.5796, lng: 126.9770, category: 'historical' },
+                    { name: 'N서울타워', lat: 37.5512, lng: 126.9882, category: 'landmark' },
+                    { name: '명동', lat: 37.5636, lng: 126.9824, category: 'shopping' },
+                    { name: '홍대', lat: 37.5565, lng: 126.9240, category: 'nightlife' },
+                    { name: '북촌한옥마을', lat: 37.5825, lng: 126.9833, category: 'cultural' },
+                    { name: '강남', lat: 37.5173, lng: 127.0473, category: 'modern' }
+                ];
+                
+                let successCount = 0;
+                landmarks.forEach((landmark, index) => {
+                    try {
+                        const marker = new google.maps.Marker({
+                            position: { lat: landmark.lat, lng: landmark.lng },
+                            map: map,
+                            title: landmark.name,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                fillColor: '#667eea',
+                                fillOpacity: 0.8,
+                                strokeColor: '#ffffff',
+                                strokeWeight: 2,
+                                scale: 12
+                            }
+                        });
+                        
+                        marker.addListener('click', () => {
+                            log(`🎯 ${landmark.name} 마커 클릭됨`, 'info');
+                        });
+                        
+                        successCount++;
+                        log(`✅ 마커 ${index + 1} (${landmark.name}) 생성 성공`, 'success');
+                    } catch (error) {
+                        log(`❌ 마커 ${index + 1} 생성 실패: ${error.message}`, 'error');
+                    }
+                });
+                
+                log(`📊 마커 생성 결과: ${successCount}/${landmarks.length}개 성공`, 
+                    successCount === landmarks.length ? 'success' : 'warning', 
+                    performance.now() - markerStart);
+                
+                // 전체 완료
+                const totalTime = performance.now() - startTime;
+                log(`🏁 전체 테스트 완료`, 'success', totalTime);
+                
+                if (totalTime < 3000) {
+                    log('🚀 우수한 성능! (3초 미만)', 'success');
+                } else if (totalTime < 5000) {
+                    log('👍 양호한 성능 (3-5초)', 'warning');
+                } else {
+                    log('⚠️ 성능 개선 필요 (5초 이상)', 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ 지도 생성 실패: ${error.message}`, 'error', performance.now() - mapStart);
+                log(`스택 트레이스: ${error.stack}`, 'error');
+            }
+        }
+        
+        // 페이지 로드 시 자동 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            log('📄 DOM 로드 완료', 'success');
+            setTimeout(runFullDebug, 500);
+        });
+    </script>
+</body>
+</html>

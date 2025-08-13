@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>🧪 API 키 검증 테스트</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            padding: 20px; 
+            background: #1e1e1e; 
+            color: #fff; 
+            line-height: 1.6; 
+        }
+        .result { 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-radius: 5px; 
+            border-left: 4px solid #00bcd4;
+            background: #2a2a2a;
+        }
+        .success { border-left-color: #4caf50; background: #1b4332; }
+        .error { border-left-color: #f44336; background: #4a1e1e; }
+        .step { margin: 20px 0; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a6fd8; }
+        #mapTest { width: 100%; height: 300px; border: 2px solid #333; margin: 20px 0; }
+        pre { background: #333; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h1>🔍 Google Maps API 키 검증 및 지도 테스트</h1>
+    
+    <div class="step">
+        <h2>1단계: API 키 검증</h2>
+        <button onclick="testValidation()">🧪 검증 실행</button>
+        <div id="validationResults"></div>
+    </div>
+    
+    <div class="step">
+        <h2>2단계: Google Maps API 로드</h2>
+        <button onclick="loadGoogleMaps()">📥 API 로드</button>
+        <div id="loadResults"></div>
+    </div>
+    
+    <div class="step">
+        <h2>3단계: 지도 생성 테스트</h2>
+        <button onclick="createMap()">🗺️ 지도 생성</button>
+        <div id="mapTest"></div>
+        <div id="mapResults"></div>
+    </div>
+
+    <script>
+        let apiLoaded = false;
+        
+        function addResult(containerId, message, isSuccess = true) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `result ${isSuccess ? 'success' : 'error'}`;
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            container.appendChild(div);
+            console.log(message);
+        }
+        
+        function testValidation() {
+            const container = document.getElementById('validationResults');
+            container.innerHTML = '<div class="result">🔄 검증 실행 중...</div>';
+            
+            try {
+                // CONFIG 확인
+                addResult('validationResults', `CONFIG 객체: ${!!window.CONFIG ? '✅ 존재' : '❌ 없음'}`, !!window.CONFIG);
+                
+                if (window.CONFIG) {
+                    addResult('validationResults', `API 키 값: ${CONFIG.GOOGLE_MAPS_API_KEY}`, true);
+                    addResult('validationResults', `API 키 길이: ${CONFIG.GOOGLE_MAPS_API_KEY.length}자`, true);
+                    addResult('validationResults', `API 키 타입: ${typeof CONFIG.GOOGLE_MAPS_API_KEY}`, true);
+                    
+                    // validateConfig 실행
+                    const isValid = validateConfig();
+                    addResult('validationResults', `validateConfig() 결과: ${isValid ? '✅ 성공' : '❌ 실패'}`, isValid);
+                    
+                    if (isValid) {
+                        addResult('validationResults', '🎉 API 키 검증 완료! Google Maps를 로드할 수 있습니다.', true);
+                    }
+                } else {
+                    addResult('validationResults', '❌ CONFIG 객체가 로드되지 않았습니다', false);
+                }
+            } catch (error) {
+                addResult('validationResults', `❌ 검증 중 오류: ${error.message}`, false);
+            }
+        }
+        
+        function loadGoogleMaps() {
+            if (!validateConfig()) {
+                addResult('loadResults', '❌ API 키 검증 실패. 먼저 1단계를 완료하세요.', false);
+                return;
+            }
+            
+            if (window.google && window.google.maps) {
+                addResult('loadResults', '✅ Google Maps API가 이미 로드되어 있습니다', true);
+                apiLoaded = true;
+                return;
+            }
+            
+            addResult('loadResults', '⏳ Google Maps API 로딩 시작...', true);
+            
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=onGoogleMapsLoaded`;
+            script.async = true;
+            
+            script.onload = () => {
+                addResult('loadResults', '✅ Google Maps API 스크립트 로드 완료', true);
+            };
+            
+            script.onerror = (error) => {
+                addResult('loadResults', '❌ Google Maps API 스크립트 로드 실패', false);
+                addResult('loadResults', `오류 세부사항: ${error.message || 'Unknown error'}`, false);
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        // Google Maps API 로드 완료 콜백
+        window.onGoogleMapsLoaded = function() {
+            addResult('loadResults', '✅ Google Maps API 콜백 실행됨', true);
+            addResult('loadResults', '🎯 Google Maps API 로드 완료!', true);
+            apiLoaded = true;
+        };
+        
+        function createMap() {
+            if (!apiLoaded) {
+                addResult('mapResults', '❌ Google Maps API가 아직 로드되지 않았습니다. 2단계를 먼저 완료하세요.', false);
+                return;
+            }
+            
+            const container = document.getElementById('mapTest');
+            container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f0f0f0; color: #333;">⏳ 지도 생성 중...</div>';
+            
+            try {
+                const map = new google.maps.Map(container, {
+                    center: { lat: 37.5665, lng: 126.9780 }, // 서울 중심
+                    zoom: 12,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                });
+                
+                addResult('mapResults', '✅ 지도 생성 성공!', true);
+                
+                // 테스트 마커 추가
+                const marker = new google.maps.Marker({
+                    position: { lat: 37.5796, lng: 126.9770 }, // 경복궁
+                    map: map,
+                    title: '경복궁 - 테스트 마커',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        fillColor: '#667eea',
+                        fillOpacity: 0.8,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2,
+                        scale: 15
+                    }
+                });
+                
+                addResult('mapResults', '✅ 테스트 마커 추가 완료', true);
+                addResult('mapResults', '🎉 모든 테스트 성공! Google Maps가 정상 작동합니다.', true);
+                
+            } catch (error) {
+                addResult('mapResults', `❌ 지도 생성 실패: ${error.message}`, false);
+                container.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">지도 생성 실패: ${error.message}</div>`;
+            }
+        }
+        
+        // 페이지 로드 시 자동으로 1단계 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                testValidation();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

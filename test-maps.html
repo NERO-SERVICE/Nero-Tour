@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Test</title>
+    <style>
+        #testMap {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #ccc;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h1>Google Maps 테스트</h1>
+    <div id="status"></div>
+    
+    <!-- 테스트용 지도 컨테이너 -->
+    <div id="testMap">
+        <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8f9fa;">
+            지도 로딩 중...
+        </div>
+    </div>
+    
+    <div id="markerStatus"></div>
+    
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML += `<div class="status ${type}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function initTestMap() {
+            updateStatus('Google Maps 초기화 콜백 호출됨', 'info');
+            
+            if (!window.google || !window.google.maps) {
+                updateStatus('Google Maps API가 로드되지 않았습니다', 'error');
+                return;
+            }
+            
+            updateStatus('Google Maps API 로드 확인됨', 'success');
+            
+            try {
+                // 기본 지도 생성
+                const map = new google.maps.Map(document.getElementById('testMap'), {
+                    center: { lat: 37.5665, lng: 126.9780 }, // 서울 중심
+                    zoom: 12,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                });
+                
+                updateStatus('Google Maps 인스턴스 생성 성공', 'success');
+                
+                // 지도 로드 완료 대기
+                google.maps.event.addListenerOnce(map, 'idle', () => {
+                    updateStatus('지도 렌더링 완료', 'success');
+                    
+                    // 테스트 마커 생성
+                    createTestMarkers(map);
+                });
+                
+            } catch (error) {
+                updateStatus(`지도 생성 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        function createTestMarkers(map) {
+            updateStatus('테스트 마커 생성 시작', 'info');
+            
+            const testLocations = [
+                { name: '경복궁', lat: 37.5796, lng: 126.9770, category: 'historical' },
+                { name: 'N서울타워', lat: 37.5512, lng: 126.9882, category: 'landmark' },
+                { name: '명동', lat: 37.5636, lng: 126.9824, category: 'shopping' }
+            ];
+            
+            let successCount = 0;
+            
+            testLocations.forEach((location, index) => {
+                try {
+                    const marker = new google.maps.Marker({
+                        position: { lat: location.lat, lng: location.lng },
+                        map: map,
+                        title: location.name,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            fillColor: '#FF0000',
+                            fillOpacity: 0.8,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2,
+                            scale: 12
+                        }
+                    });
+                    
+                    successCount++;
+                    updateStatus(`마커 ${index + 1} (${location.name}) 생성 성공`, 'success');
+                    
+                    // 마커 클릭 이벤트
+                    marker.addListener('click', () => {
+                        updateStatus(`${location.name} 마커 클릭됨`, 'info');
+                    });
+                    
+                } catch (error) {
+                    updateStatus(`마커 ${index + 1} 생성 실패: ${error.message}`, 'error');
+                }
+            });
+            
+            const markerStatus = document.getElementById('markerStatus');
+            markerStatus.innerHTML = `<div class="status ${successCount === testLocations.length ? 'success' : 'error'}">
+                마커 생성 결과: ${successCount}/${testLocations.length}개 성공
+            </div>`;
+        }
+        
+        // 설정 검증
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus('페이지 로드 완료', 'info');
+            
+            if (!window.CONFIG) {
+                updateStatus('CONFIG 객체를 찾을 수 없습니다', 'error');
+                return;
+            }
+            
+            if (!validateConfig()) {
+                updateStatus('API 키 검증 실패', 'error');
+                return;
+            }
+            
+            updateStatus('API 키 검증 성공', 'success');
+            
+            // Google Maps API 로드
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initTestMap`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = () => {
+                updateStatus('Google Maps API 스크립트 로드 완료', 'success');
+            };
+            
+            script.onerror = () => {
+                updateStatus('Google Maps API 스크립트 로드 실패', 'error');
+            };
+            
+            document.head.appendChild(script);
+            updateStatus('Google Maps API 로드 시작', 'info');
+        });
+        
+        // 전역 콜백
+        window.initTestMap = initTestMap;
+    </script>
+</body>
+</html>
