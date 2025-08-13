@@ -21,11 +21,9 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         
         // // mapsManager를 먼저 초기화 (안전성 확보)
         // this.mapsManager = new GoogleMapsManager();
-        // console.log('📍 MapsManager 초기화 완료');
         
         // // 간소화된 API 키 검증
         // if (validateConfig()) {
-        //     console.log('✅ API 키 확인, 지도 기능 활성화');
         //     this.setupMapIntegration();
         // } else {
         //     console.warn('⚠️ API 키 문제, 지도 기능 제한');
@@ -34,7 +32,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         // // Explore 화면 위치 표시 즉시 초기화
         // this.updateExploreLocationDisplay();
         
-        // console.log('✅ Seoul Explorer Enhanced 초기화 완료');
     }
 
     // API 키 경고 표시
@@ -57,32 +54,24 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
 
     // Google Maps 통합 설정
     setupMapIntegration() {
-        console.log('🗺️ Google Maps 통합 설정 시작');
-        
         // Geocoder 초기화 (Google Maps API가 로드된 후)
         if (window.google && window.google.maps) {
             this.geocoder = new google.maps.Geocoder();
-            console.log('✅ Geocoder 사전 초기화 완료');
-        } else {
-            console.log('⏳ Google Maps API 로드 대기 중...');
         }
         
         // 지도 탭 활성화 시 지도 초기화
         const mapTab = document.querySelector('[data-section="map"]');
         if (mapTab) {
             mapTab.addEventListener('click', () => {
-                console.log('🖱️ 지도 탭 클릭됨');
                 this.initializeMapIfNeeded();
             });
-            console.log('✅ 지도 탭 이벤트 리스너 설정 완료');
         } else {
-            console.warn('⚠️ 지도 탭을 찾을 수 없습니다');
+            console.warn('지도 탭을 찾을 수 없습니다');
         }
     }
 
     // 필요 시에만 지도 초기화 (성능 최적화)
     async initializeMapIfNeeded() {
-        console.log('🔄 지도 초기화 확인 시작');
         
         // mapsManager 안전성 체크
         if (!this.mapsManager) {
@@ -93,7 +82,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         
         if (!this.mapsManager.isInitialized) {
             try {
-                console.log('🚀 새로운 지도 인스턴스 생성 중...');
                 await this.mapsManager.initializeMap('googleMap');
                 this.mapsManager.addLandmarkMarkers(this.getSeoulLandmarks());
                 
@@ -102,13 +90,11 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                     this.mapsManager.addUserLocationMarker(this.currentLocation);
                 }
                 
-                console.log('✅ 지도 초기화 완료');
             } catch (error) {
                 console.error('❌ 지도 초기화 실패:', error);
                 this.showMapError(error.message);
             }
         } else {
-            console.log('ℹ️ 지도 이미 초기화됨');
         }
     }
 
@@ -177,15 +163,12 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     
     // 메인 화면용 상세 주소 가져오기
     async getDetailedAddressForMainScreen(position) {
-        console.log('🔍 상세 주소 가져오기 시작:', position);
         
         if (!this.geocoder) {
             // Geocoder가 없으면 초기화
             if (window.google && window.google.maps) {
                 this.geocoder = new google.maps.Geocoder();
-                console.log('✅ Geocoder 초기화 완료');
             } else {
-                console.log('⚠️ Google Maps API 아직 로드되지 않음');
                 // Google Maps API 로드를 기다렸다가 다시 시도
                 setTimeout(() => {
                     this.getDetailedAddressForMainScreen(position);
@@ -195,13 +178,11 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         }
         
         try {
-            console.log('🌍 Geocoding API 호출 중...');
             const results = await new Promise((resolve, reject) => {
                 this.geocoder.geocode({
                     location: position, 
                     language: 'en'
                 }, (results, status) => {
-                    console.log('🌍 Geocoding 응답:', status, results);
                     if (status === 'OK') {
                         resolve(results);
                     } else {
@@ -212,7 +193,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             
             if (results && results[0]) {
                 const addressComponents = results[0].address_components;
-                console.log('🏠 주소 컴포넌트:', addressComponents);
                 
                 const address = this.parseKoreanAddress(addressComponents);
                 this.currentAddress = address;
@@ -222,13 +202,11 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 if (locationStatus) {
                     const locationDisplay = `${address.district} ${address.neighborhood}`;
                     locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${locationDisplay}`;
-                    console.log('📍 헤더 위치 업데이트:', locationDisplay);
                 }
                 
                 // Explore 화면 위치 표시도 업데이트
                 this.updateExploreLocationOnChange();
                 
-                console.log('✅ 메인 화면 상세 주소 설정 완료:', address);
             }
         } catch (error) {
             console.error('❌ 메인 화면 역지오코딩 오류:', error);
@@ -243,7 +221,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
 
     // 내비게이션 핸들러 확장 (지도 탭 추가)
     handleNavigation(section) {
-        console.log('🧭 네비게이션:', section); // 디버그용
         
         switch(section) {
             case 'map':
@@ -403,7 +380,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         }
         
         try {
-            console.log(`🔍 장소 검색: "${query}"`);
             this.showSearchLoading(true);
             
             // 기존 검색 결과 마커 제거
@@ -419,7 +395,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             
             const results = await new Promise((resolve, reject) => {
                 this.mapsManager.placesService.textSearch(request, (results, status) => {
-                    console.log('Places API 응답:', status, results);
                     if (status === google.maps.places.PlacesServiceStatus.OK) {
                         resolve(results);
                     } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
@@ -433,7 +408,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             this.showSearchLoading(false);
             
             if (results && results.length > 0) {
-                console.log(`✅ ${results.length}개 검색 결과 찾음`);
                 this.displaySearchResults(results);
                 
                 // 첫 번째 결과로 지도 중심 이동
@@ -443,7 +417,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                     this.mapsManager.map.setZoom(15);
                 }
             } else {
-                console.log('❌ 검색 결과 없음');
                 this.showSearchNoResults(query);
             }
             
@@ -508,7 +481,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     
     // 검색 결과 표시 (지도에 마커로 표시)
     displaySearchResults(results) {
-        console.log('🗺️ 검색 결과 표시 시작:', results.length);
         
         if (!this.mapsManager || !this.mapsManager.map) {
             console.error('❌ 지도가 초기화되지 않아 검색 결과를 표시할 수 없습니다');
@@ -545,7 +517,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 
                 // 마커 클릭 이벤트
                 marker.addListener('click', () => {
-                    console.log('🎯 검색 결과 마커 클릭:', place.name);
                     
                     // 다른 정보창 닫기
                     if (this.currentInfoWindow) {
@@ -571,14 +542,12 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 });
                 
                 successCount++;
-                console.log(`✅ 검색 마커 ${index + 1} 생성 성공: ${place.name}`);
                 
             } catch (error) {
                 console.error(`❌ 검색 마커 ${index + 1} 생성 실패:`, error, place);
             }
         });
         
-        console.log(`📌 ${successCount}/${results.length}개 검색 결과 마커 표시 완료`);
         
         // 검색 결과 요약 표시
         const locationStatus = document.getElementById('locationStatus');
@@ -647,7 +616,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             }
         });
         this.searchMarkers = [];
-        console.log('🧹 검색 마커 정리 완료');
     }
     
     // 장소 상세 정보 표시 (Places API Details)
@@ -658,7 +626,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         }
         
         try {
-            console.log(`🔍 장소 상세 정보 요청: ${placeId}`);
             
             const request = {
                 placeId: placeId,
@@ -675,7 +642,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 });
             });
             
-            console.log('✅ 상세 정보 가져오기 성공:', details.name);
             this.displayPlaceDetailsModal(details);
             
         } catch (error) {
@@ -765,7 +731,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     
     // 검색된 장소로 길찾기
     async getDirectionsToPlace(placeId) {
-        console.log(`🧭 길찾기 시작: ${placeId}`);
         
         if (!this.userPosition) {
             alert('현재 위치를 찾을 수 없습니다. 위치 서비스를 활성화해주세요.');
@@ -789,7 +754,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 'WALKING'
             );
             
-            console.log('✅ 경로 계산 완료');
             
             // 경로 정보 표시
             const route = result.routes[0];
@@ -825,7 +789,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
 
     // 전체 화면 지도 초기화
     async initializeFullscreenMap() {
-        console.log('🚀 전체 화면 지도 초기화 시작');
         
         // mapsManager 안전성 체크
         if (!this.mapsManager) {
@@ -840,18 +803,15 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             this.showMapError('Google Maps API 로드 대기 중입니다. 잠시만 기다려주세요.');
             // API 로드 완료 후 자동 재시도
             window.addEventListener('google-maps-loaded', () => {
-                console.log('🔄 API 로드 완료, 지도 재초기화');
                 this.initializeFullscreenMap();
             }, { once: true }); // 한 번만 실행
             return;
         }
         
         try {
-            console.log('⚡ 빠른 지도 초기화 시작');
             
             // 기존 지도가 있으면 재사용
             if (this.mapsManager.isInitialized && this.mapsManager.map) {
-                console.log('♻️ 기존 지도 재사용');
                 this.setupExistingMap();
                 return;
             }
@@ -880,7 +840,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 this.mapsManager.centerOnUser(this.currentLocation);
             }
             
-            console.log('⚡ 빠른 지도 초기화 완료');
             
         } catch (error) {
             console.error('❌ 지도 초기화 실패:', error);
@@ -908,7 +867,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             this.mapsManager.centerOnUser(this.currentLocation);
         }
         
-        console.log('♻️ 기존 지도 재설정 완료');
     }
 
     // 최적화된 위치 추적
@@ -936,7 +894,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             }
         );
         
-        console.log('📍 최적화된 위치 추적 시작');
     }
 
     // 실시간 위치 업데이트 핸들러
@@ -966,7 +923,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         // 주변 장소 기반 마커 업데이트
         this.updateNearbyMarkers();
         
-        console.log('📍 위치 업데이트:', newPosition);
     }
 
     // 역지오코딩으로 상세 주소 가져오기
@@ -996,7 +952,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 // Explore 화면도 업데이트
                 this.updateExploreLocationOnChange();
                 
-                console.log('📍 상세 주소:', address);
             }
         } catch (error) {
             console.error('역지오코딩 오류:', error);
@@ -1006,7 +961,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     
     // 한국 주소 파싱
     parseKoreanAddress(components) {
-        console.log('🏠 주소 파싱 시작:', components);
         
         const address = {
             city: '',
@@ -1024,9 +978,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         components.forEach(component => {
             const types = component.types;
             const longName = component.long_name;
-            const shortName = component.short_name;
-            
-            console.log(`🔍 컴포넌트: ${longName} (${shortName}) - 타입: ${types.join(', ')}`);
             
             // 시/도 (Seoul, 서울특별시)
             if (types.includes('administrative_area_level_1')) {
@@ -1056,7 +1007,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         address.district = this.cleanKoreanAddress(address.district);
         address.neighborhood = this.cleanKoreanAddress(address.neighborhood);
         
-        console.log('✅ 파싱된 주소:', address);
         return address;
     }
     
@@ -1096,7 +1046,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     // DB 장소들을 마커로 표시
     displayLocationMarkers() {
         const landmarks = this.getSeoulLandmarks();
-        console.log('🏷️ 표시할 랜드마크:', landmarks);
         
         if (!this.mapsManager || !this.mapsManager.isInitialized) {
             console.error('❌ 지도가 초기화되지 않아 마커를 표시할 수 없습니다');
@@ -1118,7 +1067,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         this.clearNearbyMarkers();
         
         landmarks.forEach((landmark, index) => {
-            console.log(`🏗️ 마커 ${index + 1} 생성 중:`, landmark.name, landmark.coordinates);
             
             try {
                 // 좌표가 유효한지 확인
@@ -1136,11 +1084,9 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                     optimized: false // 커스텀 아이콘의 경우 최적화 비활성화
                 });
 
-                console.log(`✅ 마커 ${index + 1} 생성 성공:`, landmark.name, 'Position:', marker.getPosition().toString());
 
                 // 마커 클릭 이벤트
                 marker.addListener('click', () => {
-                    console.log('🎯 마커 클릭됨:', landmark.name);
                     this.showMarkerInfo(landmark);
                 });
 
@@ -1154,23 +1100,19 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             }
         });
         
-        console.log(`📌 ${this.nearbyMarkers.length}/${landmarks.length}개 장소 마커 표시 완료`);
         
         // 마커 바운드 계산 및 지도 중심 조정
         if (this.nearbyMarkers.length > 0) {
-            console.log('🔍 마커 위치 확인:');
             const bounds = new google.maps.LatLngBounds();
             
             this.nearbyMarkers.forEach((markerObj, index) => {
                 const position = markerObj.marker.getPosition();
-                console.log(`  ${index + 1}. ${markerObj.data.name}: ${position.toString()}`);
                 bounds.extend(position);
             });
             
             // 사용자 위치가 없으면 모든 마커가 보이도록 지도 조정
             if (!this.currentLocation) {
                 this.mapsManager.map.fitBounds(bounds);
-                console.log('📍 마커 바운드에 맞춰 지도 조정');
             }
         }
     }
@@ -1187,8 +1129,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         };
 
         const config = iconConfig[category] || iconConfig['landmark'];
-        
-        console.log('🎨 마커 아이콘 생성:', category, config);
         
         return {
             path: google.maps.SymbolPath.CIRCLE,
@@ -1301,7 +1241,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         const backBtn = document.getElementById('backToExplore');
         if (backBtn) {
             backBtn.addEventListener('click', () => {
-                console.log('🔙 뒤로가기 버튼 클릭 - index.html로 이동');
                 window.location.href = 'index.html';
             });
         }
@@ -1520,7 +1459,6 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
 // filepath: /Users/hoyeon/workspace/nero_tour/enhanced-app.js
 /*...*/
 function initializeGoogleMaps() {
-    console.log('⚡ Google Maps API 로드 완료 - 즉시 초기화');
 
     // API 로드 완료 이벤트 발생
     window.dispatchEvent(new Event('google-maps-loaded'));
@@ -1547,7 +1485,6 @@ function initializeGoogleMaps() {
             window.seoulExplorer.favorites = existingFavorites;
         }
 
-        console.log('🔄 Enhanced 버전으로 업그레이드 완료');
     } else {
         // 새로운 Enhanced 인스턴스 생성
         window.seoulExplorer = new SeoulExplorerEnhanced();

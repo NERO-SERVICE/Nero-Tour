@@ -14,7 +14,6 @@ class GoogleMapsManager {
 
     // 간소화된 지도 초기화
     async initializeMap(containerId) {
-        console.log('🗺️ 간소화된 지도 초기화:', containerId);
         
         // 기본 체크
         if (!window.google?.maps) {
@@ -39,7 +38,6 @@ class GoogleMapsManager {
 
         try {
             this.map = new google.maps.Map(container, mapOptions);
-            console.log('✅ 지도 생성 완료');
             
         } catch (error) {
             console.error('❌ 지도 생성 실패:', error);
@@ -53,7 +51,6 @@ class GoogleMapsManager {
         this.placesService = new google.maps.places.PlacesService(this.map);
 
         this.isInitialized = true;
-        console.log('✅ 지도 초기화 완료');
     }
 
     // 커스텀 지도 스타일
@@ -78,7 +75,6 @@ class GoogleMapsManager {
 
     // 간소화된 마커 추가
     addLandmarkMarkers(landmarks) {
-        console.log('📌 마커 추가:', landmarks.length, '개');
         
         if (!this.map) return;
 
@@ -119,7 +115,6 @@ class GoogleMapsManager {
             }
         });
 
-        console.log(`✅ ${this.markers.length}개 마커 생성 완료`);
     }
 
     // 커스텀 마커 아이콘
@@ -283,7 +278,11 @@ class GoogleMapsManager {
     // 카테고리별 마커 필터링
     filterMarkersByCategory(category) {
         // 구현 예정: 카테고리별 마커 표시/숨김
-        console.log(`필터링: ${category}`);
+        if (category === 'all') {
+            // Show all markers
+            return;
+        }
+        // Filter by specific category
     }
 
     // 이벤트 핸들러

@@ -90,31 +90,22 @@
     <script src="app.js"></script>
     <script src="maps-manager.js"></script>
     <script src="enhanced-app.js"></script>
-    <script src="debug-helper.js"></script>
     
-    <!-- Google Maps API (즉시 로딩) -->
+    <!-- Google Maps API -->
     <script>
-        // 빠른 Google Maps API 로딩
         function loadGoogleMapsAPI() {
-            
-            console.log('⚡ Google Maps API 로딩 시작');
             const script = document.createElement('script');
             script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async`;
             script.async = true;
-            script.defer = false; // 즉시 로딩
-            
-            script.onload = function() {
-                console.log('✅ Google Maps API 스크립트 로드 완료');
-            };
+            script.defer = false;
             
             script.onerror = function() {
-                console.error("❌ Google Maps API 로딩 실패");
+                console.error("Google Maps API loading failed");
             };
             
             document.head.appendChild(script);
         }
         
-        // 페이지 로드되자마자 즉시 API 로드 시작
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 if (validateConfig()) {
@@ -122,7 +113,6 @@
                 }
             });
         } else {
-            // 이미 로드된 경우 즉시 실행
             if (validateConfig()) {
                 loadGoogleMapsAPI();
             }

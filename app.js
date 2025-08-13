@@ -475,7 +475,7 @@ class SeoulExplorer {
 
     showMap() {
         // 이 메서드는 SeoulExplorerEnhanced에서 오버라이드됩니다
-        console.log('기본 showMap 호출됨 - Enhanced 버전에서 처리됨');
+        // Enhanced 버전에서 처리됨
     }
 
     showGuide() {
