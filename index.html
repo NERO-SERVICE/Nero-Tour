@@ -26,22 +26,6 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Current Location Section -->
-            <section class="current-location-card">
-                <div class="card-header">
-                    <h2>You Are Here</h2>
-                    <button class="refresh-location" id="refreshLocation">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
-                <div class="location-info" id="locationInfo">
-                    <div class="loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Finding nearby attractions...</span>
-                    </div>
-                </div>
-            </section>
-
             <!-- Popular Locations Grid -->
             <section class="locations-section">
                 <h2>Popular Seoul Destinations</h2>
@@ -71,17 +55,9 @@
                 <i class="fas fa-compass"></i>
                 <span>Explore</span>
             </button>
-            <button class="nav-item" data-section="favorites">
-                <i class="fas fa-heart"></i>
-                <span>Favorites</span>
-            </button>
             <button class="nav-item" data-section="map">
                 <i class="fas fa-map"></i>
                 <span>Map</span>
-            </button>
-            <button class="nav-item" data-section="guide">
-                <i class="fas fa-book"></i>
-                <span>Guide</span>
             </button>
         </nav>
     </div>
@@ -95,7 +71,7 @@
     <script>
         function loadGoogleMapsAPI() {
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async&language=en&region=US`;
             script.async = true;
             script.defer = false;
             

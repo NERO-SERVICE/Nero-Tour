@@ -15,36 +15,39 @@ class GoogleMapsManager {
     // 간소화된 지도 초기화
     async initializeMap(containerId) {
         
-        // 기본 체크
+        // Basic checks
         if (!window.google?.maps) {
-            throw new Error('Google Maps API 없음');
+            throw new Error('Google Maps API not available');
         }
         
         const container = document.getElementById(containerId);
         if (!container) {
-            throw new Error(`컨테이너 없음: ${containerId}`);
+            throw new Error(`Container not found: ${containerId}`);
         }
 
-        // 기본 지도 옵션
+        // 기본 지도 옵션 - English language for American users
         const mapOptions = {
             zoom: 12,
-            center: { lat: 37.5665, lng: 126.9780 }, // 서울
+            center: { lat: 37.5665, lng: 126.9780 }, // Seoul coordinates
             mapTypeId: google.maps.MapTypeId.ROADMAP,
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: false,
-            zoomControl: true
+            zoomControl: true,
+            // Ensure English language interface
+            gestureHandling: 'greedy',
+            styles: this.getMapStyles()
         };
 
         try {
             this.map = new google.maps.Map(container, mapOptions);
             
         } catch (error) {
-            console.error('❌ 지도 생성 실패:', error);
+            console.error('❌ Map creation failed:', error);
             throw error;
         }
         
-        // 간소화된 서비스 초기화
+        // Initialize simplified services
         this.directionsService = new google.maps.DirectionsService();
         this.directionsRenderer = new google.maps.DirectionsRenderer();
         this.directionsRenderer.setMap(this.map);
@@ -149,10 +152,10 @@ class GoogleMapsManager {
                 <p class="description">${landmark.description}</p>
                 <div class="info-actions">
                     <button onclick="seoulExplorer.showLocationDetails('${landmark.id}')" class="info-btn">
-                        상세정보
+                        Details
                     </button>
                     <button onclick="mapsManager.getDirections('${landmark.id}')" class="info-btn">
-                        길찾기
+                        Directions
                     </button>
                 </div>
             </div>
@@ -168,7 +171,7 @@ class GoogleMapsManager {
         this.userLocationMarker = new google.maps.Marker({
             position: position,
             map: this.map,
-            title: "내 위치",
+            title: "My Location",
             icon: {
                 path: google.maps.SymbolPath.CIRCLE,
                 fillColor: '#2ECC71',

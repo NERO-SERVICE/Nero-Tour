@@ -1,38 +1,42 @@
 // Seoul Explorer - Configuration File
-// 🔑 Google Maps API 키를 여기에 입력하세요
+// 🔑 Enter your Google Maps API key here
 
 const CONFIG = {
-    // Google Maps API Key - https://console.cloud.google.com에서 발급
+    // Google Maps API Key - Get from https://console.cloud.google.com
     GOOGLE_MAPS_API_KEY: "AIzaSyBixyCd1RldZEKkMGuMGHBGiMFVfOE-jdg",
     
-    // 지도 기본 설정
+    // Map default settings
     MAP_CONFIG: {
-        center: { lat: 37.5665, lng: 126.9780 }, // 서울 중심
+        center: { lat: 37.5665, lng: 126.9780 }, // Seoul center
         zoom: 12,
         minZoom: 10,
-        maxZoom: 18
+        maxZoom: 18,
+        language: 'en',
+        region: 'US'
     },
     
-    // 위치 서비스 설정
+    // Location service settings
     LOCATION_CONFIG: {
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 30000,
-        trackingInterval: 5000 // 5초마다 위치 업데이트
+        trackingInterval: 5000, // Update location every 5 seconds
+        language: 'en',
+        region: 'US'
     },
     
-    // 알림 설정
+    // Notification settings
     NOTIFICATION_CONFIG: {
-        geofenceRadius: 500, // 500미터
+        geofenceRadius: 500, // 500 meters
         enabled: true
     }
 };
 
-// API 키 유효성 검사 (간소화)
+// API key validation (simplified)
 function validateConfig() {
     return CONFIG.GOOGLE_MAPS_API_KEY && CONFIG.GOOGLE_MAPS_API_KEY.length > 20;
 }
 
-// 전역에서 사용할 수 있도록 export
+// Export for global use
 window.CONFIG = CONFIG;
 window.validateConfig = validateConfig;

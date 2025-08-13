@@ -156,7 +156,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             // Google Maps API가 로드되지 않은 경우 기본 표시
             const locationStatus = document.getElementById('currentLocation');
             if (locationStatus) {
-                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> 위치 확인 중...';
+                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> Locating...';
             }
         }
     }
@@ -181,7 +181,8 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             const results = await new Promise((resolve, reject) => {
                 this.geocoder.geocode({
                     location: position, 
-                    language: 'en'
+                    language: 'en',
+                    region: 'US'
                 }, (results, status) => {
                     if (status === 'OK') {
                         resolve(results);
@@ -194,27 +195,27 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             if (results && results[0]) {
                 const addressComponents = results[0].address_components;
                 
-                const address = this.parseKoreanAddress(addressComponents);
+                const address = this.parseEnglishAddress(addressComponents);
                 this.currentAddress = address;
                 
-                // 메인 화면 위치 상태 업데이트
+                // Update main screen location status in English
                 const locationStatus = document.getElementById('currentLocation');
                 if (locationStatus) {
-                    const locationDisplay = `${address.district} ${address.neighborhood}`;
+                    const streetPart = address.street && address.street !== 'undefined' ? ` ${address.street}` : '';
+                    const locationDisplay = `Seoul, ${address.district}${streetPart}`;
                     locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${locationDisplay}`;
                 }
                 
-                // Explore 화면 위치 표시도 업데이트
-                this.updateExploreLocationOnChange();
+                // Location updated in header - no need for separate explore section
                 
             }
         } catch (error) {
             console.error('❌ 메인 화면 역지오코딩 오류:', error);
             
-            // 실패 시 기본 위치 표시
+            // Fallback to default location display
             const locationStatus = document.getElementById('currentLocation');
             if (locationStatus) {
-                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> 서울, 대한민국';
+                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> Seoul, South Korea';
             }
         }
     }
@@ -298,7 +299,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 <!-- 현재 위치 정보 표시 -->
                 <div id="locationStatus" class="location-status-overlay">
                     <i class="fas fa-location-arrow"></i>
-                    <span id="locationText">위치 확인 중...</span>
+                    <span id="locationText">Locating...</span>
                 </div>
                 
                 <!-- 마커 정보 카드 (하단에서 올라오는 형태) -->
@@ -385,12 +386,13 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             // 기존 검색 결과 마커 제거
             this.clearSearchMarkers();
             
-            // Google Places Text Search 사용
+            // Google Places Text Search with English language
             const request = {
                 query: query,
-                location: this.userPosition || { lat: 37.5665, lng: 126.9780 }, // 서울 중심
-                radius: 10000, // 10km 반경
-                language: 'ko'
+                location: this.userPosition || { lat: 37.5665, lng: 126.9780 }, // Seoul center
+                radius: 10000, // 10km radius
+                language: 'en',
+                region: 'US'
             };
             
             const results = await new Promise((resolve, reject) => {
@@ -448,14 +450,14 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             locationStatus.innerHTML = `
                 <div class="search-status no-results">
                     <i class="fas fa-search"></i>
-                    <span>"${query}"에 대한 검색 결과가 없습니다</span>
+                    <span>No results found for "${query}"</span>
                 </div>
             `;
             locationStatus.className = 'location-status-overlay error';
             
             // 3초 후 기본 상태로 복원
             setTimeout(() => {
-                this.updateLocationStatus('현재 위치', 'info');
+                this.updateLocationStatus('Current Location', 'info');
             }, 3000);
         }
     }
@@ -467,14 +469,14 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             locationStatus.innerHTML = `
                 <div class="search-status error">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <span>검색 중 오류 발생: ${errorMessage}</span>
+                    <span>Search error: ${errorMessage}</span>
                 </div>
             `;
             locationStatus.className = 'location-status-overlay error';
             
             // 3초 후 기본 상태로 복원
             setTimeout(() => {
-                this.updateLocationStatus('현재 위치', 'info');
+                this.updateLocationStatus('Current Location', 'info');
             }, 3000);
         }
     }
@@ -733,7 +735,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     async getDirectionsToPlace(placeId) {
         
         if (!this.userPosition) {
-            alert('현재 위치를 찾을 수 없습니다. 위치 서비스를 활성화해주세요.');
+            alert('Current location not available. Please enable location services.');
             return;
         }
         
@@ -872,7 +874,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
     // 최적화된 위치 추적
     startRealtimeLocationTracking() {
         if (!navigator.geolocation) {
-            this.updateLocationStatus('위치 서비스를 사용할 수 없습니다', 'error');
+            this.updateLocationStatus('Location services not available', 'error');
             return;
         }
         
@@ -931,7 +933,11 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
         
         try {
             const results = await new Promise((resolve, reject) => {
-                this.geocoder.geocode({ location: position }, (results, status) => {
+                this.geocoder.geocode({ 
+                    location: position,
+                    language: 'en',
+                    region: 'US'
+                }, (results, status) => {
                     if (status === 'OK') {
                         resolve(results);
                     } else {
@@ -942,34 +948,34 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             
             if (results && results[0]) {
                 const addressComponents = results[0].address_components;
-                const address = this.parseKoreanAddress(addressComponents);
+                const address = this.parseEnglishAddress(addressComponents);
                 this.currentAddress = address;
                 
-                // 상세 주소로 위치 상태 업데이트
-                const locationDisplay = `${address.district} ${address.neighborhood}`;
+                // Update location status with detailed address
+                const streetPart = address.street && address.street !== 'undefined' ? ` ${address.street}` : '';
+                const locationDisplay = `Seoul, ${address.district}${streetPart}`;
                 this.updateLocationStatus(locationDisplay, 'success');
                 
-                // Explore 화면도 업데이트
-                this.updateExploreLocationOnChange();
+                // Location updated automatically
                 
             }
         } catch (error) {
             console.error('역지오코딩 오류:', error);
-            this.updateLocationStatus('현재 위치 추적 중', 'success');
+            this.updateLocationStatus('Tracking location', 'success');
         }
     }
     
     // 한국 주소 파싱
-    parseKoreanAddress(components) {
+    parseEnglishAddress(components) {
         
         const address = {
-            city: '',
+            city: 'Seoul',
             district: '',
-            neighborhood: '',
+            street: '',
             fullAddress: ''
         };
         
-        // 전체 주소 먼저 저장
+        // Store full address first
         const formatted = components.find(comp => comp.types.includes('route') || comp.types.includes('premise'));
         if (formatted) {
             address.fullAddress = formatted.long_name;
@@ -979,57 +985,74 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             const types = component.types;
             const longName = component.long_name;
             
-            // 시/도 (Seoul, 서울특별시)
-            if (types.includes('administrative_area_level_1')) {
-                address.city = longName;
-            }
-            // 구 (Jung-gu, Gangnam-gu, 중구, 강남구)  
-            else if (types.includes('sublocality_level_1') || types.includes('administrative_area_level_2')) {
+            // District level (Jung-gu, Gangnam-gu, etc.)
+            if (types.includes('sublocality_level_1') || types.includes('administrative_area_level_2')) {
                 address.district = longName;
             }
-            // 동 (Myeong-dong, Gangnam-dong, 명동, 강남동)
-            else if (types.includes('sublocality_level_2') || types.includes('sublocality_level_3')) {
-                address.neighborhood = longName;
+            // Street or specific area
+            else if (types.includes('route')) {
+                address.street = longName;
             }
-            // 더 세밀한 지역 (번지, 길 등)
-            else if (types.includes('sublocality_level_4') && !address.neighborhood) {
-                address.neighborhood = longName;
+            // More specific locality
+            else if (types.includes('sublocality_level_2') || types.includes('sublocality_level_3')) {
+                if (!address.street) address.street = longName;
             }
         });
         
-        // 기본값 설정 (주소 정보가 없는 경우)
-        if (!address.city) address.city = '서울특별시';
-        if (!address.district) address.district = '중구';  
-        if (!address.neighborhood) address.neighborhood = '명동';
+        // Set defaults if information is missing
+        if (!address.district) address.district = 'Jung-gu';
         
-        // 한국어 표기 정리
-        address.city = this.cleanKoreanAddress(address.city);
-        address.district = this.cleanKoreanAddress(address.district);
-        address.neighborhood = this.cleanKoreanAddress(address.neighborhood);
+        // Clean and format English address
+        address.district = this.formatEnglishDistrict(address.district);
+        if (address.street) {
+            address.street = this.formatEnglishStreet(address.street);
+        }
         
         return address;
     }
     
-    // 한국어 주소 정리
-    cleanKoreanAddress(address) {
-        if (!address) return '';
+    // Format district names for English display
+    formatEnglishDistrict(district) {
+        if (!district) return '';
         
-        // Seoul -> 서울특별시, Jung-gu -> 중구, Myeong-dong -> 명동 등
-        const translations = {
-            'Seoul': '서울특별시',
-            'Jung-gu': '중구',
-            'Gangnam-gu': '강남구', 
-            'Myeong-dong': '명동',
-            'Gangnam-dong': '강남동',
-            'Hongdae': '홍대입구',
-            'Bukchon': '북촌',
-            'Jongno-gu': '종로구',
-            'Yongsan-gu': '용산구',
-            'Seodaemun-gu': '서대문구',
-            'Mapo-gu': '마포구'
+        // Convert Korean district names to English format
+        const koreanToEnglish = {
+            '서울특별시': 'Seoul',
+            '중구': 'Jung-gu',
+            '강남구': 'Gangnam-gu',
+            '명동': 'Myeong-dong',
+            '강남동': 'Gangnam-dong',
+            '홍대입구': 'Hongdae',
+            '북촌': 'Bukchon',
+            '종로구': 'Jongno-gu',
+            '용산구': 'Yongsan-gu',
+            '서대문구': 'Seodaemun-gu',
+            '마포구': 'Mapo-gu',
+            '성동구': 'Seongdong-gu',
+            '광진구': 'Gwangjin-gu',
+            '송파구': 'Songpa-gu'
         };
         
-        return translations[address] || address;
+        return koreanToEnglish[district] || district;
+    }
+
+    formatEnglishStreet(street) {
+        if (!street) return '';
+        
+        // Keep English street names as is, translate common Korean terms
+        const koreanToEnglish = {
+            '로': 'ro',
+            '길': 'gil',
+            '대로': 'daero',
+            '가': 'ga'
+        };
+        
+        let formatted = street;
+        for (const [korean, english] of Object.entries(koreanToEnglish)) {
+            formatted = formatted.replace(new RegExp(korean + '$'), english);
+        }
+        
+        return formatted;
     }
 
     // 위치 상태 업데이트

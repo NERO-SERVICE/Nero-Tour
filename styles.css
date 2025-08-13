@@ -70,28 +70,7 @@ body {
 }
 
 /* Current Location Card */
-.current-location-card {
-    background: white;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    border: 1px solid #e9ecef;
-}
-
-/* Explore 화면 실시간 위치 표시 */
-.current-location-details {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.address-info h3 {
-    font-size: 1.1rem;
-    color: #333;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
+/* Current location card styles removed - no longer needed */
 
 .full-address {
     font-size: 0.95rem;
@@ -155,21 +134,7 @@ body {
     font-weight: 600;
 }
 
-.refresh-location {
-    background: #667eea;
-    border: none;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.refresh-location:hover {
-    background: #5a6fd8;
-    transform: translateY(-1px);
-}
+/* Refresh button styles removed - no longer needed */
 
 .loading {
     text-align: center;
@@ -337,7 +302,7 @@ body {
     padding: 0 20px 30px;
 }
 
-/* Bottom Navigation */
+/* Bottom Navigation - Simplified 2-tab layout */
 .bottom-nav {
     position: fixed;
     bottom: 0;
@@ -354,26 +319,80 @@ body {
     flex: 1;
     background: none;
     border: none;
-    padding: 8px 12px;
+    padding: 12px 16px;
     text-align: center;
     color: #666;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 0 8px;
 }
 
 .nav-item.active {
     color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
 }
 
 .nav-item i {
     display: block;
-    font-size: 1.2rem;
-    margin-bottom: 4px;
+    font-size: 1.4rem;
+    margin-bottom: 6px;
 }
 
 .nav-item span {
     font-weight: 500;
+}
+
+/* Guide Section Styles */
+.guide-section {
+    margin-top: 40px;
+}
+
+.guide-content {
+    background: #f8f9fa !important;
+    padding: 25px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+}
+
+.guide-content h3 {
+    color: #333 !important;
+    margin-bottom: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+}
+
+.guide-item {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.guide-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.guide-item h4 {
+    color: #667eea !important;
+    margin-bottom: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+}
+
+.guide-item p {
+    color: #555;
+    line-height: 1.5;
+    font-size: 0.9rem;
 }
 
 /* Responsive Design */
@@ -394,9 +413,7 @@ body {
         padding: 15px;
     }
     
-    .current-location-card {
-        padding: 15px;
-    }
+    /* Current location card styles removed */
 }
 
 /* Utility Classes */
@@ -1507,4 +1524,76 @@ body {
 .search-loading {
     opacity: 0.6;
     pointer-events: none;
+}
+
+/* Location Card Images */
+.location-image {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.location-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.location-card:hover .location-image img {
+    transform: scale(1.05);
+}
+
+.location-image .icon-fallback {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 2rem;
+}
+
+/* Korean name styling */
+.location-korean {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 4px 0 8px 0;
+    font-weight: 500;
+}
+
+/* Modal hero image */
+.location-hero-image {
+    width: calc(100% + 40px);
+    margin: -20px -20px 20px -20px;
+    height: 200px;
+    overflow: hidden;
+}
+
+.location-hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Mobile optimizations for images */
+@media (max-width: 768px) {
+    .location-image {
+        height: 100px;
+    }
+    
+    .location-hero-image {
+        height: 150px;
+    }
+    
+    .location-image .icon-fallback {
+        font-size: 1.5rem;
+    }
 }
