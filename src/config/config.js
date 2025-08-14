@@ -1,9 +1,11 @@
 // Seoul Explorer - Configuration File
-// 🔑 Enter your Google Maps API key here
+// 🔑 API keys are now loaded from config-local.js (not committed to git)
 
 const CONFIG = {
-    // Google Maps API Key - Get from https://console.cloud.google.com
-    GOOGLE_MAPS_API_KEY: "AIzaSyBixyCd1RldZEKkMGuMGHBGiMFVfOE-jdg",
+    // Google Maps API Key - Loaded from config-local.js
+    get GOOGLE_MAPS_API_KEY() {
+        return window.LOCAL_CONFIG?.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_NOT_FOUND';
+    },
     
     // Map default settings
     MAP_CONFIG: {

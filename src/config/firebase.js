@@ -1,27 +1,85 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
-import { getFunctions } from "firebase/functions";
-import { getAuth } from "firebase/auth";
+// Firebase Configuration and Initialization
+// Make sure config-local.js is loaded before this script
+// This file uses Firebase v9+ modular SDK with CDN imports
 
-// TODO: Replace the following with your app's Firebase project configuration
-// See: https://firebase.google.com/docs/web/setup#config-object
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+// Firebase configuration loaded from LOCAL_CONFIG
+function getFirebaseConfig() {
+    if (typeof window !== 'undefined' && window.LOCAL_CONFIG?.FIREBASE_CONFIG) {
+        return window.LOCAL_CONFIG.FIREBASE_CONFIG;
+    }
+    
+    // Fallback configuration (for development/testing)
+    console.warn('Firebase config not found in LOCAL_CONFIG, using fallback');
+    return {
+        apiKey: "YOUR_API_KEY_NOT_FOUND",
+        authDomain: "YOUR_AUTH_DOMAIN_NOT_FOUND",
+        projectId: "YOUR_PROJECT_ID_NOT_FOUND",
+        storageBucket: "YOUR_STORAGE_BUCKET_NOT_FOUND",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID_NOT_FOUND",
+        appId: "YOUR_APP_ID_NOT_FOUND",
+        measurementId: "YOUR_MEASUREMENT_ID_NOT_FOUND"
+    };
+}
+
+// Initialize Firebase when the page loads
+let FirebaseApp = null;
+let FirebaseDB = null;
+let FirebaseAuth = null;
+let FirebaseAnalytics = null;
+let FirebaseFunctions = null;
+
+function initializeFirebase() {
+    try {
+        const firebaseConfig = getFirebaseConfig();
+        
+        // Check if Firebase SDK is loaded from CDN
+        if (typeof firebase === 'undefined') {
+            console.error('Firebase SDK not loaded. Please include Firebase CDN scripts.');
+            return false;
+        }
+
+        // Initialize Firebase App
+        FirebaseApp = firebase.initializeApp(firebaseConfig);
+        
+        // Initialize services
+        if (firebase.firestore) {
+            FirebaseDB = firebase.firestore();
+        }
+        
+        if (firebase.auth) {
+            FirebaseAuth = firebase.auth();
+        }
+        
+        if (firebase.analytics) {
+            FirebaseAnalytics = firebase.analytics();
+        }
+        
+        if (firebase.functions) {
+            FirebaseFunctions = firebase.functions();
+        }
+        
+        console.log('Firebase initialized successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('Firebase initialization failed:', error);
+        return false;
+    }
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeFirebase);
+} else {
+    initializeFirebase();
+}
+
+// Export for global access
+window.Firebase = {
+    app: FirebaseApp,
+    db: FirebaseDB,
+    auth: FirebaseAuth,
+    analytics: FirebaseAnalytics,
+    functions: FirebaseFunctions,
+    initialize: initializeFirebase
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore(app);
-const functions = getFunctions(app);
-const auth = getAuth(app);
-
-export { app, analytics, db, functions, auth };
