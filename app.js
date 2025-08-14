@@ -65,7 +65,7 @@ class SeoulExplorer {
                 nameKorean: '명동',
                 category: 'shopping',
                 description: 'Korea\'s premier shopping and beauty district',
-                longDescription: 'A bustling shopping paradise famous for K-beauty products, street food, and fashion. Home to major department stores, cosmetic shops, and the vibrant Myeong-dong street food market.',
+                longDescription: 'Discover Seoul\'s most vibrant shopping and beauty district, where traditional Korean culture meets modern retail therapy. From world-renowned K-beauty products to authentic street food, Myeong-dong offers an immersive experience into Korean lifestyle.',
                 coordinates: { lat: 37.5636, lng: 126.9824 },
                 icon: 'fas fa-shopping-bag',
                 image: './assets/명동.png',
@@ -78,7 +78,29 @@ class SeoulExplorer {
                 hours: 'Stores: 10:00 - 22:00, Street food: 12:00 - 02:00',
                 entrance: 'Free (individual purchases vary)',
                 nearbySubway: 'Myeong-dong Station (Line 4)',
-                culturalTips: 'Bow when receiving free samples, tipping is not expected'
+                culturalTips: 'Bow when receiving free samples, tipping is not expected',
+                detailSections: [
+                    {
+                        title: 'K-Beauty Paradise',
+                        image: './assets/명동-화장품.png',
+                        description: 'Myeong-dong is the epicenter of Korean beauty culture. Walk through streets lined with flagship stores of famous brands like Innisfree, Etude House, and The Face Shop. Experience the latest in Korean skincare technology with free consultations and product samples. Many stores offer English-speaking staff and tax-free shopping for tourists.'
+                    },
+                    {
+                        title: 'Street Food Heaven',
+                        image: './assets/명동-길거리음식.png',
+                        description: 'As evening falls, Myeong-dong transforms into a street food paradise. Try iconic Korean snacks like hotteok (sweet pancakes), tteokbokki (spicy rice cakes), and Korean corn dogs. The street food market operates from late afternoon until early morning, offering authentic flavors at budget-friendly prices.'
+                    },
+                    {
+                        title: 'Fashion & Shopping',
+                        image: './assets/명동-쇼핑.png',
+                        description: 'From high-end department stores like Lotte and Shinsegae to trendy boutiques and international brands, Myeong-dong caters to every fashion taste and budget. The area features both luxury shopping experiences and affordable fashion finds, making it a complete retail destination.'
+                    },
+                    {
+                        title: 'Cultural Experience',
+                        image: './assets/명동-문화.png',
+                        description: 'Beyond shopping, Myeong-dong offers cultural experiences including traditional Korean performances, art galleries, and historic Myeong-dong Cathedral. The area seamlessly blends modern consumer culture with Korean traditions, providing visitors with a well-rounded cultural experience.'
+                    }
+                ]
             },
             {
                 id: 'jayang-station',
@@ -197,7 +219,7 @@ class SeoulExplorer {
             return;
         }
 
-        locationStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting your location...';
+        locationStatus.textContent = 'Getting your location...';
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -225,10 +247,10 @@ class SeoulExplorer {
         // Get English address using reverse geocoding
         this.getEnglishAddress(this.currentLocation)
             .then(address => {
-                locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${address}`;
+                locationStatus.textContent = address;
             })
             .catch(() => {
-                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> Seoul, South Korea';
+                locationStatus.textContent = 'Seoul, South Korea';
             });
         
         const nearbyLocations = this.findNearbyLocations();
@@ -261,7 +283,7 @@ class SeoulExplorer {
         const locationStatus = document.getElementById('currentLocation');
         const locationInfo = document.getElementById('locationInfo');
         
-        locationStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Location unavailable';
+        locationStatus.textContent = 'Location unavailable';
         locationInfo.innerHTML = `
             <div class="error-state">
                 <h3>⚠️ Location Access Needed</h3>
@@ -417,7 +439,7 @@ class SeoulExplorer {
         const landmarks = this.getSeoulLandmarks();
         
         locationsGrid.innerHTML = landmarks.map(location => `
-            <button class="location-card" data-location-id="${location.id}" onclick="seoulExplorer.showLocationDetails('${location.id}')">
+            <button class="location-card" data-location-id="${location.id}" onclick="seoulExplorer.navigateToDetail('${location.id}')">
                 <div class="location-image">
                     ${location.image ? 
                         `<img src="${location.image}" alt="${location.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -438,97 +460,15 @@ class SeoulExplorer {
         `).join('');
     }
 
-    // Show location details modal
-    showLocationDetails(locationId) {
-        const location = this.getSeoulLandmarks().find(l => l.id === locationId);
-        if (!location) return;
-
-        const modal = document.getElementById('modalOverlay');
-        const modalContent = document.getElementById('modalContent');
-        
-        // Simplified UI without favorites
-
-        modalContent.innerHTML = `
-            ${location.image ? `
-                <div class="location-hero-image">
-                    <img src="${location.image}" alt="${location.name}" onerror="this.parentElement.style.display='none';">
-                </div>
-            ` : ''}
-            
-            <div class="location-detail-header">
-                <h2>${location.name}</h2>
-                <p class="korean-name">${location.nameKorean}</p>
-                <div class="location-tags" style="margin: 15px 0;">
-                    ${location.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-                </div>
-            </div>
-            
-            <div class="location-detail-content">
-                <div class="description-section">
-                    <h3>About This Place</h3>
-                    <p>${location.longDescription}</p>
-                </div>
-
-                <div class="practical-info">
-                    <h3>Practical Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <i class="fas fa-clock"></i>
-                            <div>
-                                <strong>Hours:</strong><br>
-                                ${location.hours}
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-won-sign"></i>
-                            <div>
-                                <strong>Entrance:</strong><br>
-                                ${location.entrance}
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-subway"></i>
-                            <div>
-                                <strong>Nearest Subway:</strong><br>
-                                ${location.nearbySubway}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tips-section">
-                    <h3>💡 Insider Tips</h3>
-                    <ul>
-                        ${location.tips.map(tip => `<li>${tip}</li>`).join('')}
-                    </ul>
-                </div>
-
-                <div class="cultural-tips">
-                    <h3>🇰🇷 Cultural Insight</h3>
-                    <p><em>${location.culturalTips}</em></p>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="directions-btn" onclick="seoulExplorer.getDirections('${locationId}')" style="width: 100%;">
-                        <i class="fas fa-directions"></i> Get Directions
-                    </button>
-                </div>
-            </div>
-        `;
-
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+    // Navigate to detail page
+    navigateToDetail(locationId) {
+        // Navigate to detail.html with location parameter
+        window.location.href = `detail.html?location=${locationId}`;
     }
+
 
     // Initialize event listeners
     initializeEventListeners() {
-        // Close modal
-        document.getElementById('closeModal').addEventListener('click', this.closeModal);
-        document.getElementById('modalOverlay').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('modalOverlay')) {
-                this.closeModal();
-            }
-        });
 
         // Start automatic location tracking (no manual refresh needed)
         this.startAutoLocationTracking();
@@ -545,12 +485,7 @@ class SeoulExplorer {
         });
     }
 
-    closeModal() {
-        document.getElementById('modalOverlay').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    // toggleFavorite functionality removed for simplified UX
+    // Navigation functionality
 
     getDirections(locationId) {
         const location = this.getSeoulLandmarks().find(l => l.id === locationId);
@@ -682,7 +617,7 @@ class SeoulExplorer {
             // Update UI
             const locationStatus = document.getElementById('currentLocation');
             if (locationStatus) {
-                locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${address}`;
+                locationStatus.textContent = address;
             }
             
             // Update distances for landmarks
@@ -697,7 +632,7 @@ class SeoulExplorer {
             // Fallback to coordinates display
             const locationStatus = document.getElementById('currentLocation');
             if (locationStatus) {
-                locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> Seoul (${newLocation.lat.toFixed(4)}, ${newLocation.lng.toFixed(4)})`;
+                locationStatus.textContent = `Seoul (${newLocation.lat.toFixed(4)}, ${newLocation.lng.toFixed(4)})`;
             }
         }
     }
@@ -783,6 +718,7 @@ class SeoulExplorer {
 
     // Handle tracking errors with retry logic
     handleLocationTrackingError(error) {
+        console.error('Location tracking error:', error);
         this.locationTrackingState.retryCount++;
         
         if (this.locationTrackingState.retryCount >= this.locationTrackingState.maxRetries) {
@@ -805,27 +741,15 @@ class SeoulExplorer {
         const locationStatus = document.getElementById('currentLocation');
         if (!locationStatus) return;
         
-        const icons = {
-            info: 'fas fa-spinner fa-spin',
-            success: 'fas fa-location-arrow',
-            error: 'fas fa-exclamation-triangle'
-        };
-        
-        const colors = {
-            info: '#667eea',
-            success: '#28a745',
-            error: '#dc3545'
-        };
-        
         if (type !== 'success') {
-            locationStatus.innerHTML = `<i class="${icons[type]}" style="color: ${colors[type]}"></i> ${message}`;
+            locationStatus.textContent = message;
             
             // Revert to normal after delay for non-success messages
             if (type === 'info') {
                 setTimeout(() => {
                     const currentText = locationStatus.textContent;
                     if (currentText === message) {
-                        locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${this.getLastKnownLocation()}`;
+                        locationStatus.textContent = this.getLastKnownLocation();
                     }
                 }, 3000);
             }

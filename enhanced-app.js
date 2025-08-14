@@ -156,7 +156,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             // Google Maps API가 로드되지 않은 경우 기본 표시
             const locationStatus = document.getElementById('currentLocation');
             if (locationStatus) {
-                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> Locating...';
+                locationStatus.textContent = 'Locating...';
             }
         }
     }
@@ -203,7 +203,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
                 if (locationStatus) {
                     const streetPart = address.street && address.street !== 'undefined' ? ` ${address.street}` : '';
                     const locationDisplay = `Seoul, ${address.district}${streetPart}`;
-                    locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${locationDisplay}`;
+                    locationStatus.textContent = locationDisplay;
                 }
                 
                 // Location updated in header - no need for separate explore section
@@ -215,7 +215,7 @@ class SeoulExplorerEnhanced extends SeoulExplorer {
             // Fallback to default location display
             const locationStatus = document.getElementById('currentLocation');
             if (locationStatus) {
-                locationStatus.innerHTML = '<i class="fas fa-location-arrow"></i> Seoul, South Korea';
+                locationStatus.textContent = 'Seoul, South Korea';
             }
         }
     }
