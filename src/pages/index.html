@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seoul Explorer - Discover Korea</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Configuration -->
+    <script src="../config/config.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1><i class="fas fa-map-marker-alt"></i> Seoul Explorer</h1>
+                <p class="tagline">Discover Seoul's Hidden Gems</p>
+            </div>
+            <div class="location-status" id="locationStatus">
+                <i class="fas fa-location-arrow"></i>
+                <span id="currentLocation">Getting your location...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Popular Locations Grid -->
+            <section class="locations-section" id="locationsSection">
+                <h2>Popular Seoul Destinations</h2>
+                <div class="locations-grid" id="locationsGrid">
+                    <!-- Location buttons will be populated by JavaScript -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-section="explore">
+                <i class="fas fa-compass"></i>
+                <span>Explore</span>
+            </button>
+            <button class="nav-item" data-section="map">
+                <i class="fas fa-map"></i>
+                <span>Map</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../components/explorer.js"></script>
+    <script src="../services/maps-manager.js"></script>
+    <script src="../utils/enhanced-app.js"></script>
+    
+    <!-- Google Maps API -->
+    <script>
+        function loadGoogleMapsAPI() {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async&language=en&region=US`;
+            script.async = true;
+            script.defer = false;
+            
+            script.onerror = function() {
+                console.error("Google Maps API loading failed");
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (validateConfig()) {
+                    loadGoogleMapsAPI();
+                }
+            });
+        } else {
+            if (validateConfig()) {
+                loadGoogleMapsAPI();
+            }
+        }
+    </script>
+</body>
+</html>
