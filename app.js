@@ -589,41 +589,255 @@ class SeoulExplorer {
         this.addGuideToExplore();
     }
 
-    // Automatic location tracking without manual refresh
+    // Enhanced automatic location tracking system
     startAutoLocationTracking() {
-        // Initial location request
-        this.getCurrentLocation();
+        console.log('🎯 Starting enhanced location tracking system');
         
-        // Set up automatic location updates every 30 seconds
-        this.locationUpdateInterval = setInterval(() => {
-            this.getCurrentLocation();
-        }, 30000); // 30 seconds
+        // Initialize tracking state
+        this.locationTrackingState = {
+            isActive: true,
+            retryCount: 0,
+            maxRetries: 5,
+            lastUpdate: null,
+            trackingMethod: 'initializing'
+        };
         
-        // Also track location changes using watchPosition for more responsive updates
-        if (navigator.geolocation) {
-            this.watchPositionId = navigator.geolocation.watchPosition(
+        // Initial location request with enhanced error handling
+        this.performLocationUpdate();
+        
+        // Set up multi-layer tracking system
+        this.setupPeriodicTracking();
+        this.setupWatchPositionTracking();
+        
+        // Setup health check to ensure tracking remains active
+        this.setupLocationHealthCheck();
+    }
+
+    // Unified location update method
+    async performLocationUpdate() {
+        if (!this.locationTrackingState?.isActive) return;
+        
+        try {
+            console.log('📍 Performing location update...');
+            this.updateLocationStatus('Updating location...', 'info');
+            
+            const position = await this.getLocationWithRetry();
+            const newLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: Date.now()
+            };
+            
+            // Always update if this is first location or significant movement
+            if (this.shouldUpdateLocation(newLocation)) {
+                await this.processLocationUpdate(newLocation);
+            }
+            
+            this.locationTrackingState.retryCount = 0; // Reset on success
+            this.locationTrackingState.lastUpdate = Date.now();
+            
+        } catch (error) {
+            console.error('❌ Location update failed:', error);
+            this.handleLocationTrackingError(error);
+        }
+    }
+
+    // Enhanced geolocation with retry logic
+    getLocationWithRetry(timeoutMs = 10000) {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation not supported'));
+                return;
+            }
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: timeoutMs,
+                maximumAge: 30000 // 30 seconds cache
+            };
+
+            navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const newLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    
-                    // Only update if location has changed significantly (>50 meters)
-                    if (this.hasLocationChanged(newLocation)) {
-                        this.currentLocation = newLocation;
-                        this.handleLocationSuccess();
-                    }
+                    console.log('✅ Location obtained successfully');
+                    resolve(position);
                 },
                 (error) => {
-                    console.warn('Watch position error:', error);
+                    console.warn('⚠️ Geolocation error:', error.message);
+                    reject(error);
                 },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 60000 // Cache for 1 minute
-                }
+                options
             );
+        });
+    }
+
+    // Process and update location with enhanced address resolution
+    async processLocationUpdate(newLocation) {
+        this.currentLocation = newLocation;
+        
+        try {
+            // Get English address
+            const address = await this.getEnglishAddress(newLocation);
+            
+            // Update UI
+            const locationStatus = document.getElementById('currentLocation');
+            if (locationStatus) {
+                locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${address}`;
+            }
+            
+            // Update distances for landmarks
+            this.updateDistances();
+            
+            // Update status
+            this.updateLocationStatus('Location updated', 'success');
+            console.log(`📍 Location updated: ${address}`);
+            
+        } catch (error) {
+            console.error('Address resolution failed:', error);
+            // Fallback to coordinates display
+            const locationStatus = document.getElementById('currentLocation');
+            if (locationStatus) {
+                locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> Seoul (${newLocation.lat.toFixed(4)}, ${newLocation.lng.toFixed(4)})`;
+            }
         }
+    }
+
+    // Setup periodic tracking as fallback
+    setupPeriodicTracking() {
+        this.periodicInterval = setInterval(() => {
+            if (this.locationTrackingState?.isActive) {
+                console.log('⏰ Periodic location check');
+                this.performLocationUpdate();
+            }
+        }, 45000); // Every 45 seconds
+    }
+
+    // Setup watchPosition for real-time tracking
+    setupWatchPositionTracking() {
+        if (!navigator.geolocation) return;
+        
+        this.watchPositionId = navigator.geolocation.watchPosition(
+            (position) => {
+                const newLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: Date.now()
+                };
+                
+                if (this.shouldUpdateLocation(newLocation)) {
+                    console.log('👁️ WatchPosition detected location change');
+                    this.processLocationUpdate(newLocation);
+                }
+            },
+            (error) => {
+                console.warn('⚠️ WatchPosition error:', error.message);
+                this.locationTrackingState.trackingMethod = 'periodic_only';
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 45000
+            }
+        );
+    }
+
+    // Health check to ensure tracking stays active
+    setupLocationHealthCheck() {
+        this.healthCheckInterval = setInterval(() => {
+            const now = Date.now();
+            const timeSinceLastUpdate = now - (this.locationTrackingState?.lastUpdate || 0);
+            
+            // If no update in 2 minutes, restart tracking
+            if (timeSinceLastUpdate > 120000) {
+                console.log('🔄 Location health check: restarting tracking');
+                this.restartLocationTracking();
+            }
+        }, 60000); // Check every minute
+    }
+
+    // Restart location tracking
+    restartLocationTracking() {
+        this.stopAutoLocationTracking();
+        setTimeout(() => {
+            this.startAutoLocationTracking();
+        }, 2000);
+    }
+
+    // Enhanced location change detection
+    shouldUpdateLocation(newLocation) {
+        if (!this.currentLocation) return true;
+        
+        const distance = this.calculateDistance(
+            this.currentLocation.lat,
+            this.currentLocation.lng,
+            newLocation.lat,
+            newLocation.lng
+        );
+        
+        const timeDiff = newLocation.timestamp - (this.currentLocation.timestamp || 0);
+        
+        // Update if moved >30m OR if >2 minutes since last update
+        return distance > 0.03 || timeDiff > 120000;
+    }
+
+    // Handle tracking errors with retry logic
+    handleLocationTrackingError(error) {
+        this.locationTrackingState.retryCount++;
+        
+        if (this.locationTrackingState.retryCount >= this.locationTrackingState.maxRetries) {
+            console.error('❌ Max location retries reached');
+            this.updateLocationStatus('Location unavailable', 'error');
+            return;
+        }
+        
+        // Exponential backoff retry
+        const retryDelay = Math.pow(2, this.locationTrackingState.retryCount) * 1000;
+        console.log(`🔄 Retrying location update in ${retryDelay}ms (attempt ${this.locationTrackingState.retryCount})`);
+        
+        setTimeout(() => {
+            this.performLocationUpdate();
+        }, retryDelay);
+    }
+
+    // Update location status with visual feedback
+    updateLocationStatus(message, type = 'info') {
+        const locationStatus = document.getElementById('currentLocation');
+        if (!locationStatus) return;
+        
+        const icons = {
+            info: 'fas fa-spinner fa-spin',
+            success: 'fas fa-location-arrow',
+            error: 'fas fa-exclamation-triangle'
+        };
+        
+        const colors = {
+            info: '#667eea',
+            success: '#28a745',
+            error: '#dc3545'
+        };
+        
+        if (type !== 'success') {
+            locationStatus.innerHTML = `<i class="${icons[type]}" style="color: ${colors[type]}"></i> ${message}`;
+            
+            // Revert to normal after delay for non-success messages
+            if (type === 'info') {
+                setTimeout(() => {
+                    const currentText = locationStatus.textContent;
+                    if (currentText === message) {
+                        locationStatus.innerHTML = `<i class="fas fa-location-arrow"></i> ${this.getLastKnownLocation()}`;
+                    }
+                }, 3000);
+            }
+        }
+    }
+
+    // Get last known location display
+    getLastKnownLocation() {
+        if (this.currentLocation) {
+            return `Seoul (${this.currentLocation.lat.toFixed(4)}, ${this.currentLocation.lng.toFixed(4)})`;
+        }
+        return 'Seoul, South Korea';
     }
 
     // Check if location has changed significantly 
@@ -641,8 +855,25 @@ class SeoulExplorer {
         return distance > 0.05; // 0.05 km = 50 meters
     }
 
-    // Clean up tracking when not needed
+    // Enhanced cleanup for location tracking
     stopAutoLocationTracking() {
+        console.log('🛑 Stopping location tracking');
+        
+        if (this.locationTrackingState) {
+            this.locationTrackingState.isActive = false;
+        }
+        
+        // Clear all intervals and watchers
+        if (this.periodicInterval) {
+            clearInterval(this.periodicInterval);
+            this.periodicInterval = null;
+        }
+        
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
+        
         if (this.locationUpdateInterval) {
             clearInterval(this.locationUpdateInterval);
             this.locationUpdateInterval = null;
