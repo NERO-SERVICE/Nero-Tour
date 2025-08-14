@@ -1,15 +1,15 @@
 // Firebase Configuration and Initialization
-// Make sure config-local.js is loaded before this script
+// Make sure config.js is loaded before this script
 // This file uses Firebase v9+ modular SDK with CDN imports
 
-// Firebase configuration loaded from LOCAL_CONFIG
+// Firebase configuration loaded from CONFIG
 function getFirebaseConfig() {
-    if (typeof window !== 'undefined' && window.LOCAL_CONFIG?.FIREBASE_CONFIG) {
-        return window.LOCAL_CONFIG.FIREBASE_CONFIG;
+    if (typeof window !== 'undefined' && window.CONFIG?.FIREBASE_CONFIG) {
+        return window.CONFIG.FIREBASE_CONFIG;
     }
     
     // Fallback configuration (for development/testing)
-    console.warn('Firebase config not found in LOCAL_CONFIG, using fallback');
+    console.warn('Firebase config not found in CONFIG, using fallback');
     return {
         apiKey: "YOUR_API_KEY_NOT_FOUND",
         authDomain: "YOUR_AUTH_DOMAIN_NOT_FOUND",

@@ -1,20 +1,20 @@
-// Seoul Explorer - Configuration File
-// 🚀 Auto-generated during build - DO NOT EDIT MANUALLY
-// Environment variables injected by Netlify build process
+// Seoul Explorer - Configuration File Template
+// This is a template that will be replaced during build process
+// The actual config.js will be generated with environment variables
 
 const CONFIG = {
-    // Google Maps API Key - Injected from environment
-    GOOGLE_MAPS_API_KEY: "AIzaSyBixyCd1RldZEKkMGuMGHBGiMFVfOE-jdg",
+    // Google Maps API Key - Will be injected during build
+    GOOGLE_MAPS_API_KEY: "%%GOOGLE_MAPS_API_KEY%%",
     
-    // Firebase Configuration - Injected from environment
+    // Firebase Configuration - Will be injected during build
     FIREBASE_CONFIG: {
-        apiKey: "AIzaSyC8K_example_firebase_key_12345",
-        authDomain: "your-project.firebaseapp.com",
-        projectId: "your-project-id",
-        storageBucket: "your-project.appspot.com",
-        messagingSenderId: "123456789012",
-        appId: "1:123456789012:web:your-app-id",
-        measurementId: "G-YOUR-MEASUREMENT-ID"
+        apiKey: "%%FIREBASE_API_KEY%%",
+        authDomain: "%%FIREBASE_AUTH_DOMAIN%%",
+        projectId: "%%FIREBASE_PROJECT_ID%%",
+        storageBucket: "%%FIREBASE_STORAGE_BUCKET%%",
+        messagingSenderId: "%%FIREBASE_MESSAGING_SENDER_ID%%",
+        appId: "%%FIREBASE_APP_ID%%",
+        measurementId: "%%FIREBASE_MEASUREMENT_ID%%"
     },
     
     // Map default settings
@@ -48,11 +48,11 @@ const CONFIG = {
 function validateConfig() {
     const hasValidMapsKey = CONFIG.GOOGLE_MAPS_API_KEY && 
                            CONFIG.GOOGLE_MAPS_API_KEY.length > 20 && 
-                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET');
+                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('%%');
     
     const hasValidFirebaseKey = CONFIG.FIREBASE_CONFIG.apiKey && 
                                CONFIG.FIREBASE_CONFIG.apiKey.length > 20 && 
-                               !CONFIG.FIREBASE_CONFIG.apiKey.includes('NOT_SET');
+                               !CONFIG.FIREBASE_CONFIG.apiKey.includes('%%');
     
     return hasValidMapsKey && hasValidFirebaseKey;
 }
@@ -60,10 +60,3 @@ function validateConfig() {
 // Export for global use
 window.CONFIG = CONFIG;
 window.validateConfig = validateConfig;
-
-// Build info
-window.BUILD_INFO = {
-    timestamp: "2025-08-14T10:56:00.691Z",
-    environment: "production",
-    version: "1.0.0"
-};

@@ -5,8 +5,14 @@
 .env.test.local
 .env.production.local
 
-# Local configuration files
+# Local configuration files (deprecated - using .env now)
 src/config/config-local.js
+
+# Build generated files
+src/config/config.js
+
+# Backup files
+*.backup
 
 # Node modules
 node_modules/
