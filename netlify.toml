@@ -1,6 +1,6 @@
 [build]
-  # Build command - run our Netlify-specific build script
-  command = "node build-netlify.js"
+  # Build command - unified build script that detects environment
+  command = "node build.js"
   
   # Publish directory - the root directory since it's a static site
   publish = "."

@@ -5,13 +5,20 @@ const path = require('path');
 
 console.log('🚀 Starting build process...');
 
-// Load environment variables from .env file only
-console.log('📁 Loading from .env file...');
-require('dotenv').config();
+// Detect environment and load variables accordingly
+const isNetlify = process.env.NETLIFY === 'true';
+const envFilePath = path.join(__dirname, '.env');
+const hasEnvFile = fs.existsSync(envFilePath);
 
-// Check if .env file exists
-if (!fs.existsSync(path.join(__dirname, '.env'))) {
-    console.error('❌ .env file not found! Please create .env file with your API keys.');
+if (isNetlify) {
+    console.log('☁️ Netlify environment detected - using environment variables');
+} else if (hasEnvFile) {
+    console.log('📁 Local environment detected - loading from .env file');
+    require('dotenv').config();
+} else {
+    console.error('❌ No environment configuration found!');
+    console.error('   - For local development: create .env file with your API keys');
+    console.error('   - For Netlify: set environment variables in dashboard');
     process.exit(1);
 }
 
@@ -30,7 +37,7 @@ const envVars = {
 console.log('📝 Environment variables loaded:');
 Object.keys(envVars).forEach(key => {
     const value = envVars[key];
-    const maskedValue = value.length > 10 ? value.substring(0, 10) + '...' : value;
+    const maskedValue = value && value.length > 10 ? value.substring(0, 10) + '...' : (value || 'NOT_SET');
     console.log(`   ${key}: ${maskedValue}`);
 });
 
@@ -101,9 +108,9 @@ window.validateConfig = validateConfig;
 // Build info
 window.BUILD_INFO = {
     timestamp: "${new Date().toISOString()}",
-    environment: "local",
+    environment: "${isNetlify ? 'netlify' : 'local'}",
     version: "1.0.0",
-    source: ".env file"
+    source: "${isNetlify ? 'netlify environment variables' : '.env file'}"
 };
 `;
 
