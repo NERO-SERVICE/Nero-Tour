@@ -8,13 +8,13 @@ const CONFIG = {
     
     // Firebase Configuration - Injected from environment
     FIREBASE_CONFIG: {
-        apiKey: "",
-        authDomain: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: "",
-        measurementId: ""
+        apiKey: "AIzaSyC8K_example_firebase_key_12345",
+        authDomain: "nero-tour-seoul.firebaseapp.com",
+        projectId: "nero-tour-seoul",
+        storageBucket: "nero-tour-seoul.appspot.com",
+        messagingSenderId: "123456789012",
+        appId: "1:123456789012:web:abcdef123456789",
+        measurementId: "G-EXAMPLE123"
     },
     
     // Map default settings
@@ -76,8 +76,8 @@ window.validateConfig = validateConfig;
 
 // Build info
 window.BUILD_INFO = {
-    timestamp: "2025-08-15T06:45:38.770Z",
-    environment: "netlify",
+    timestamp: "2025-08-15T10:20:19.343Z",
+    environment: "local",
     version: "1.0.0",
-    source: "netlify environment variables"
+    source: ".env file"
 };

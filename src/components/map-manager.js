@@ -116,11 +116,477 @@ class SeoulMapManager {
         ];
     }
 
-    // Create custom circular thumbnail marker with purple gradient
+    // Show bottom sheet with landmark information and image gallery
+    showLandmarkBottomSheet(landmark) {
+        // Remove existing bottom sheet if any
+        const existingBottomSheet = document.getElementById('landmarkBottomSheet');
+        if (existingBottomSheet) {
+            existingBottomSheet.remove();
+        }
+
+        // Create bottom sheet HTML
+        const bottomSheetHTML = `
+            <div id="landmarkBottomSheet" class="landmark-bottom-sheet">
+                <div class="bottom-sheet-backdrop" onclick="this.parentElement.remove()"></div>
+                <div class="bottom-sheet-content">
+                    <!-- Header with drag handle -->
+                    <div class="bottom-sheet-header">
+                        <div class="drag-handle"></div>
+                        <button class="close-button" onclick="this.closest('.landmark-bottom-sheet').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Image Gallery -->
+                    <div class="image-gallery-container">
+                        <div class="image-gallery" id="imageGallery-${landmark.id}">
+                            ${landmark.image ? 
+                                `<div class="gallery-item active">
+                                     <img src="${landmark.image}" alt="${landmark.name}" 
+                                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                     <div class="image-fallback" style="display: none;">
+                                         <span class="fallback-icon">${this.getCategoryIcon(landmark.category)}</span>
+                                     </div>
+                                 </div>` :
+                                `<div class="gallery-item active">
+                                     <div class="image-fallback">
+                                         <span class="fallback-icon">${this.getCategoryIcon(landmark.category)}</span>
+                                     </div>
+                                 </div>`
+                            }
+                        </div>
+                        <div class="gallery-indicators" id="galleryIndicators-${landmark.id}">
+                            <span class="indicator active"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Information Section -->
+                    <div class="landmark-info">
+                        <div class="landmark-header">
+                            <h2 class="landmark-name">${landmark.name}</h2>
+                            <p class="landmark-name-korean">${landmark.nameKorean}</p>
+                        </div>
+                        
+                        <p class="landmark-description">${landmark.description}</p>
+                        
+                        <!-- Tags -->
+                        <div class="landmark-tags">
+                            ${landmark.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        
+                        <!-- Distance and Actions -->
+                        <div class="landmark-actions">
+                            <div class="distance-info">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>${this.currentLocation ? 
+                                    this.calculateDistance(
+                                        this.currentLocation.lat,
+                                        this.currentLocation.lng,
+                                        landmark.coordinates.lat,
+                                        landmark.coordinates.lng
+                                    ).toFixed(1) + ' km away' : 'Distance unknown'
+                                }</span>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="action-btn primary" onclick="seoulMapManager.getDirections('${landmark.id}')">
+                                    <i class="fas fa-directions"></i>
+                                    Get Directions
+                                </button>
+                                <button class="action-btn secondary" onclick="window.open('detail.html?location=${landmark.id}', '_blank')">
+                                    <i class="fas fa-info-circle"></i>
+                                    More Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add CSS styles
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            .landmark-bottom-sheet {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+                max-width: 414px;
+                margin: 0 auto;
+            }
+            
+            .bottom-sheet-backdrop {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+            }
+            
+            .bottom-sheet-content {
+                position: relative;
+                width: 100%;
+                max-height: 80vh;
+                background: white;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+                animation: slideUp 0.3s ease-out;
+                overflow: hidden;
+            }
+            
+            @keyframes slideUp {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+            
+            .bottom-sheet-header {
+                position: relative;
+                padding: 12px 20px 8px;
+                text-align: center;
+            }
+            
+            .drag-handle {
+                width: 40px;
+                height: 4px;
+                background: #ddd;
+                border-radius: 2px;
+                margin: 0 auto;
+            }
+            
+            .close-button {
+                position: absolute;
+                top: 8px;
+                right: 16px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                color: #666;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+            }
+            
+            .close-button:hover {
+                background: #f0f0f0;
+                color: #333;
+            }
+            
+            .image-gallery-container {
+                position: relative;
+                width: 100%;
+                height: 200px;
+                overflow: hidden;
+                background: #f8f9fa;
+            }
+            
+            .image-gallery {
+                display: flex;
+                width: 100%;
+                height: 100%;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            
+            .image-gallery::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .gallery-item {
+                flex: 0 0 100%;
+                scroll-snap-align: start;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .gallery-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            
+            .image-fallback {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            
+            .fallback-icon {
+                font-size: 48px;
+                color: white;
+                filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+            }
+            
+            .gallery-indicators {
+                position: absolute;
+                bottom: 12px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 6px;
+            }
+            
+            .indicator {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.5);
+                transition: all 0.2s ease;
+            }
+            
+            .indicator.active {
+                background: white;
+                transform: scale(1.2);
+            }
+            
+            .landmark-info {
+                padding: 20px;
+                max-height: calc(60vh - 200px);
+                overflow-y: auto;
+            }
+            
+            .landmark-header {
+                margin-bottom: 16px;
+            }
+            
+            .landmark-name {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #333;
+                margin: 0 0 4px 0;
+            }
+            
+            .landmark-name-korean {
+                font-size: 1rem;
+                color: #666;
+                margin: 0 0 16px 0;
+            }
+            
+            .landmark-description {
+                font-size: 1rem;
+                line-height: 1.6;
+                color: #555;
+                margin-bottom: 16px;
+            }
+            
+            .landmark-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+            
+            .tag {
+                background: #f0f7ff;
+                color: #1976d2;
+                padding: 6px 12px;
+                border-radius: 16px;
+                font-size: 0.85rem;
+                font-weight: 500;
+                border: 1px solid #e3f2fd;
+            }
+            
+            .landmark-actions {
+                border-top: 1px solid #eee;
+                padding-top: 16px;
+            }
+            
+            .distance-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 16px;
+                color: #4caf50;
+                font-weight: 600;
+            }
+            
+            .action-buttons {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .action-btn {
+                flex: 1;
+                padding: 12px 16px;
+                border: none;
+                border-radius: 12px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                min-height: 44px;
+            }
+            
+            .action-btn.primary {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+            
+            .action-btn.primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            }
+            
+            .action-btn.secondary {
+                background: white;
+                color: #667eea;
+                border: 2px solid #667eea;
+            }
+            
+            .action-btn.secondary:hover {
+                background: #667eea;
+                color: white;
+            }
+        `;
+
+        // Add styles and bottom sheet to page
+        document.head.appendChild(styleSheet);
+        document.body.appendChild(document.createElement('div'));
+        document.body.lastElementChild.innerHTML = bottomSheetHTML;
+        
+        // Add touch gesture support for closing bottom sheet
+        this.addBottomSheetGestures();
+        
+        // Initialize image gallery interactions
+        this.initializeImageGallery(landmark.id);
+    }
+
+    // Add touch gesture support for bottom sheet
+    addBottomSheetGestures() {
+        const bottomSheet = document.getElementById('landmarkBottomSheet');
+        const content = bottomSheet?.querySelector('.bottom-sheet-content');
+        const dragHandle = bottomSheet?.querySelector('.drag-handle');
+        
+        if (!bottomSheet || !content || !dragHandle) return;
+
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+        let initialHeight = 0;
+
+        // Touch start
+        const handleTouchStart = (e) => {
+            startY = e.touches[0].clientY;
+            initialHeight = content.offsetHeight;
+            isDragging = true;
+            content.style.transition = 'none';
+        };
+
+        // Touch move
+        const handleTouchMove = (e) => {
+            if (!isDragging) return;
+            
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            
+            if (deltaY > 0) { // Only allow downward dragging
+                const newHeight = Math.max(initialHeight - deltaY, 200);
+                content.style.height = `${newHeight}px`;
+            }
+        };
+
+        // Touch end
+        const handleTouchEnd = (e) => {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            content.style.transition = 'all 0.3s ease-out';
+            
+            const deltaY = currentY - startY;
+            
+            // If dragged down more than 100px, close the bottom sheet
+            if (deltaY > 100) {
+                bottomSheet.remove();
+            } else {
+                // Snap back to original position
+                content.style.height = 'auto';
+            }
+        };
+
+        // Add event listeners
+        dragHandle.addEventListener('touchstart', handleTouchStart);
+        document.addEventListener('touchmove', handleTouchMove);
+        document.addEventListener('touchend', handleTouchEnd);
+
+        // Cleanup function
+        const cleanup = () => {
+            dragHandle.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+        };
+
+        // Store cleanup function for later use
+        bottomSheet.addEventListener('remove', cleanup);
+    }
+
+    // Add image gallery interactions (for future multiple images)
+    initializeImageGallery(landmarkId) {
+        const gallery = document.getElementById(`imageGallery-${landmarkId}`);
+        const indicators = document.getElementById(`galleryIndicators-${landmarkId}`);
+        
+        if (!gallery || !indicators) return;
+
+        let currentIndex = 0;
+        const items = gallery.querySelectorAll('.gallery-item');
+        const indicatorDots = indicators.querySelectorAll('.indicator');
+
+        // Update indicators
+        const updateIndicators = (index) => {
+            indicatorDots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
+            });
+        };
+
+        // Handle scroll
+        gallery.addEventListener('scroll', () => {
+            const scrollLeft = gallery.scrollLeft;
+            const itemWidth = gallery.offsetWidth;
+            const newIndex = Math.round(scrollLeft / itemWidth);
+            
+            if (newIndex !== currentIndex) {
+                currentIndex = newIndex;
+                updateIndicators(currentIndex);
+            }
+        });
+
+        // Handle indicator clicks
+        indicatorDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                gallery.scrollTo({
+                    left: index * gallery.offsetWidth,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    }
+
+    // Create simple icon-based marker with purple gradient
     createCustomMarkerIcon(landmark) {        
-        // Create custom SVG marker with circular thumbnail and purple gradient border
+        const categoryIcon = this.getCategoryIcon(landmark.category);
+        
+        // Simple icon-based pin with category representation
         const svgMarker = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="75" viewBox="0 0 60 75">
+            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="65" viewBox="0 0 50 65">
                 <defs>
                     <linearGradient id="purpleGradient-${landmark.id}" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
@@ -128,32 +594,32 @@ class SeoulMapManager {
                         <stop offset="100%" style="stop-color:#aa6dd8;stop-opacity:1" />
                     </linearGradient>
                     <filter id="shadow-${landmark.id}" x="-50%" y="-50%" width="200%" height="200%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="rgba(0,0,0,0.3)"/>
+                        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/>
                     </filter>
                 </defs>
                 
-                <!-- Outer gradient border circle -->
-                <circle cx="30" cy="25" r="22" fill="url(#purpleGradient-${landmark.id})" filter="url(#shadow-${landmark.id})" opacity="0.9"/>
+                <!-- Outer gradient circle -->
+                <circle cx="25" cy="20" r="18" fill="url(#purpleGradient-${landmark.id})" filter="url(#shadow-${landmark.id})" opacity="0.95"/>
                 
                 <!-- Inner white border -->
-                <circle cx="30" cy="25" r="20" fill="white"/>
+                <circle cx="25" cy="20" r="15" fill="white"/>
                 
-                <!-- Thumbnail background -->
-                <circle cx="30" cy="25" r="18" fill="#f8f9fa" stroke="none"/>
+                <!-- Background circle -->
+                <circle cx="25" cy="20" r="13" fill="url(#purpleGradient-${landmark.id})" opacity="0.1"/>
                 
-                <!-- Category emoji icon -->
-                <text x="30" y="32" text-anchor="middle" fill="#667eea" font-size="18" font-family="system-ui">${this.getCategoryIcon(landmark.category)}</text>
+                <!-- Category icon -->
+                <text x="25" y="26" text-anchor="middle" fill="#667eea" font-size="14" font-family="system-ui" font-weight="600">${categoryIcon}</text>
                 
-                <!-- Pointer tail with gradient -->
-                <path d="M 30 47 L 24 60 L 36 60 Z" fill="url(#purpleGradient-${landmark.id})" filter="url(#shadow-${landmark.id})"/>
-                <path d="M 30 47 L 26 58 L 34 58 Z" fill="white"/>
+                <!-- Pointer tail -->
+                <path d="M 25 38 L 20 50 L 30 50 Z" fill="url(#purpleGradient-${landmark.id})" filter="url(#shadow-${landmark.id})"/>
+                <path d="M 25 38 L 22 48 L 28 48 Z" fill="white"/>
             </svg>
         `;
 
         return {
             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgMarker),
-            scaledSize: new google.maps.Size(60, 75),
-            anchor: new google.maps.Point(30, 75)
+            scaledSize: new google.maps.Size(50, 65),
+            anchor: new google.maps.Point(25, 65)
         };
     }
 
@@ -177,7 +643,7 @@ class SeoulMapManager {
         const landmarks = this.getSeoulLandmarks();
         
         landmarks.forEach(landmark => {
-            // Create custom circular thumbnail marker
+            // Create simple icon-based marker
             const markerIcon = this.createCustomMarkerIcon(landmark);
             
             const marker = new google.maps.Marker({
@@ -188,59 +654,19 @@ class SeoulMapManager {
                 zIndex: 100
             });
 
-            // Create info window with enhanced content
-            const distance = this.currentLocation ? 
-                this.calculateDistance(
-                    this.currentLocation.lat,
-                    this.currentLocation.lng,
-                    landmark.coordinates.lat,
-                    landmark.coordinates.lng
-                ).toFixed(1) + ' km' : 'Distance unknown';
-
-            const infoWindow = new google.maps.InfoWindow({
-                content: `
-                    <div style="padding: 12px; max-width: 280px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                            <h3 style="margin: 0; color: #333; font-size: 1.1rem; font-weight: 600;">${landmark.name}</h3>
-                        </div>
-                        <div style="color: #666; font-size: 0.9rem; margin-bottom: 8px;">${landmark.nameKorean}</div>
-                        <p style="margin: 8px 0; color: #555; font-size: 0.9rem; line-height: 1.4;">${landmark.description}</p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0;">
-                            ${landmark.tags.map(tag => `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">${tag}</span>`).join('')}
-                        </div>
-                        <div style="color: #4caf50; font-weight: 500; font-size: 0.9rem; margin-top: 8px;">📍 ${distance}</div>
-                        <div style="margin-top: 12px;">
-                            <button onclick="seoulMapManager.getDirections('${landmark.id}')" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; margin-right: 8px;">
-                                📍 Directions
-                            </button>
-                            <button onclick="window.open('detail.html?location=${landmark.id}', '_blank')" style="background: #f8f9fa; color: #333; border: 1px solid #e9ecef; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem;">
-                                ℹ️ Details
-                            </button>
-                        </div>
-                    </div>
-                `
-            });
-
-            // Store marker and info window reference
+            // Store marker reference with landmark data
             this.attractionMarkers.push({
                 marker: marker,
-                infoWindow: infoWindow,
                 landmark: landmark
             });
 
-            // Add click listener
+            // Add click listener to show bottom sheet instead of info window
             marker.addListener('click', () => {
-                // Close all other info windows
-                this.attractionMarkers.forEach(markerInfo => {
-                    if (markerInfo.infoWindow !== infoWindow) {
-                        markerInfo.infoWindow.close();
-                    }
-                });
-                infoWindow.open(this.map, marker);
+                this.showLandmarkBottomSheet(landmark);
             });
         });
 
-        console.log(`✅ Added ${landmarks.length} attraction markers with custom icons`);
+        console.log(`✅ Added ${landmarks.length} attraction markers with icon-based pins`);
     }
 
     // Rest of the methods remain the same...
@@ -342,7 +768,7 @@ class SeoulMapManager {
             // Add user location marker
             this.updateUserLocationOnMap();
 
-            // Add attraction markers with custom icons
+            // Add attraction markers with simple icon-based pins
             this.addAttractionMarkers();
 
             // Initialize traffic layer
