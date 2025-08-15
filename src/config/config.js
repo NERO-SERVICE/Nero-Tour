@@ -8,13 +8,13 @@ const CONFIG = {
     
     // Firebase Configuration - Injected from environment
     FIREBASE_CONFIG: {
-        apiKey: "undefined",
-        authDomain: "undefined",
-        projectId: "undefined",
-        storageBucket: "undefined",
-        messagingSenderId: "undefined",
-        appId: "undefined",
-        measurementId: "undefined"
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: "",
+        measurementId: ""
     },
     
     // Map default settings
@@ -44,17 +44,30 @@ const CONFIG = {
     }
 };
 
-// API key validation
+// API key validation - Firebase is optional, Maps is required
 function validateConfig() {
     const hasValidMapsKey = CONFIG.GOOGLE_MAPS_API_KEY && 
                            CONFIG.GOOGLE_MAPS_API_KEY.length > 20 && 
-                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET');
+                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET') &&
+                           CONFIG.GOOGLE_MAPS_API_KEY.startsWith('AIza');
     
-    const hasValidFirebaseKey = CONFIG.FIREBASE_CONFIG.apiKey && 
-                               CONFIG.FIREBASE_CONFIG.apiKey.length > 20 && 
-                               !CONFIG.FIREBASE_CONFIG.apiKey.includes('NOT_SET');
+    if (!hasValidMapsKey) {
+        console.error('Invalid Google Maps API key:', {
+            exists: !!CONFIG.GOOGLE_MAPS_API_KEY,
+            length: CONFIG.GOOGLE_MAPS_API_KEY?.length,
+            startsWithAIza: CONFIG.GOOGLE_MAPS_API_KEY?.startsWith('AIza')
+        });
+    }
     
-    return hasValidMapsKey && hasValidFirebaseKey;
+    return hasValidMapsKey;
+}
+
+// Additional validation specifically for Maps
+function validateMapsConfig() {
+    return CONFIG.GOOGLE_MAPS_API_KEY && 
+           CONFIG.GOOGLE_MAPS_API_KEY.length > 30 && 
+           CONFIG.GOOGLE_MAPS_API_KEY.startsWith('AIza') &&
+           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET');
 }
 
 // Export for global use
@@ -63,7 +76,7 @@ window.validateConfig = validateConfig;
 
 // Build info
 window.BUILD_INFO = {
-    timestamp: "2025-08-15T06:39:27.678Z",
+    timestamp: "2025-08-15T06:45:38.770Z",
     environment: "netlify",
     version: "1.0.0",
     source: "netlify environment variables"

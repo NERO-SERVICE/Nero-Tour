@@ -48,17 +48,17 @@ const configContent = `// Seoul Explorer - Configuration File
 
 const CONFIG = {
     // Google Maps API Key - Injected from environment
-    GOOGLE_MAPS_API_KEY: "${envVars.GOOGLE_MAPS_API_KEY}",
+    GOOGLE_MAPS_API_KEY: "${envVars.GOOGLE_MAPS_API_KEY || ''}",
     
     // Firebase Configuration - Injected from environment
     FIREBASE_CONFIG: {
-        apiKey: "${envVars.FIREBASE_API_KEY}",
-        authDomain: "${envVars.FIREBASE_AUTH_DOMAIN}",
-        projectId: "${envVars.FIREBASE_PROJECT_ID}",
-        storageBucket: "${envVars.FIREBASE_STORAGE_BUCKET}",
-        messagingSenderId: "${envVars.FIREBASE_MESSAGING_SENDER_ID}",
-        appId: "${envVars.FIREBASE_APP_ID}",
-        measurementId: "${envVars.FIREBASE_MEASUREMENT_ID}"
+        apiKey: "${envVars.FIREBASE_API_KEY || ''}",
+        authDomain: "${envVars.FIREBASE_AUTH_DOMAIN || ''}",
+        projectId: "${envVars.FIREBASE_PROJECT_ID || ''}",
+        storageBucket: "${envVars.FIREBASE_STORAGE_BUCKET || ''}",
+        messagingSenderId: "${envVars.FIREBASE_MESSAGING_SENDER_ID || ''}",
+        appId: "${envVars.FIREBASE_APP_ID || ''}",
+        measurementId: "${envVars.FIREBASE_MEASUREMENT_ID || ''}"
     },
     
     // Map default settings
@@ -88,17 +88,30 @@ const CONFIG = {
     }
 };
 
-// API key validation
+// API key validation - Firebase is optional, Maps is required
 function validateConfig() {
     const hasValidMapsKey = CONFIG.GOOGLE_MAPS_API_KEY && 
                            CONFIG.GOOGLE_MAPS_API_KEY.length > 20 && 
-                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET');
+                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET') &&
+                           CONFIG.GOOGLE_MAPS_API_KEY.startsWith('AIza');
     
-    const hasValidFirebaseKey = CONFIG.FIREBASE_CONFIG.apiKey && 
-                               CONFIG.FIREBASE_CONFIG.apiKey.length > 20 && 
-                               !CONFIG.FIREBASE_CONFIG.apiKey.includes('NOT_SET');
+    if (!hasValidMapsKey) {
+        console.error('Invalid Google Maps API key:', {
+            exists: !!CONFIG.GOOGLE_MAPS_API_KEY,
+            length: CONFIG.GOOGLE_MAPS_API_KEY?.length,
+            startsWithAIza: CONFIG.GOOGLE_MAPS_API_KEY?.startsWith('AIza')
+        });
+    }
     
-    return hasValidMapsKey && hasValidFirebaseKey;
+    return hasValidMapsKey;
+}
+
+// Additional validation specifically for Maps
+function validateMapsConfig() {
+    return CONFIG.GOOGLE_MAPS_API_KEY && 
+           CONFIG.GOOGLE_MAPS_API_KEY.length > 30 && 
+           CONFIG.GOOGLE_MAPS_API_KEY.startsWith('AIza') &&
+           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET');
 }
 
 // Export for global use
@@ -120,26 +133,36 @@ fs.writeFileSync(configPath, configContent);
 
 console.log('✅ Config file generated:', configPath);
 
-// Validate that all required environment variables are set
+// Validate that required environment variables are set
 const missingVars = [];
 const requiredVars = ['GOOGLE_MAPS_API_KEY'];
+const optionalVars = ['FIREBASE_API_KEY', 'FIREBASE_AUTH_DOMAIN', 'FIREBASE_PROJECT_ID', 'FIREBASE_STORAGE_BUCKET', 'FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_APP_ID', 'FIREBASE_MEASUREMENT_ID'];
 
-Object.keys(envVars).forEach(key => {
+// Check required variables
+requiredVars.forEach(key => {
     if (!envVars[key] || envVars[key].trim() === '') {
         missingVars.push(key);
+    }
+});
+
+// Check optional variables (just warn)
+const missingOptionalVars = [];
+optionalVars.forEach(key => {
+    if (!envVars[key] || envVars[key].trim() === '') {
+        missingOptionalVars.push(key);
     }
 });
 
 if (missingVars.length > 0) {
     console.error('❌ Missing required environment variables:');
     missingVars.forEach(key => console.error(`   - ${key}`));
-    console.error('   Please check your .env file');
-    
-    // Check if Google Maps API key is missing (critical)
-    if (missingVars.includes('GOOGLE_MAPS_API_KEY')) {
-        console.error('🗺️  Google Maps API key is required for the app to work!');
-        process.exit(1);
-    }
+    console.error('   Please check your environment configuration');
+    process.exit(1);
+}
+
+if (missingOptionalVars.length > 0) {
+    console.warn('⚠️  Optional Firebase variables not set (Firebase features will be disabled):');
+    missingOptionalVars.forEach(key => console.warn(`   - ${key}`));
 }
 
 console.log('🎉 Build completed successfully!');

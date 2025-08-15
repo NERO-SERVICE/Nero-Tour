@@ -244,36 +244,42 @@ class SeoulExplorer {
         const locationStatus = document.getElementById('currentLocation');
         const locationInfo = document.getElementById('locationInfo');
         
-        // Get English address using reverse geocoding
-        this.getEnglishAddress(this.currentLocation)
-            .then(address => {
-                locationStatus.textContent = address;
-            })
-            .catch(() => {
-                locationStatus.textContent = 'Seoul, South Korea';
-            });
+        // Update location status
+        if (locationStatus) {
+            // Get English address using reverse geocoding
+            this.getEnglishAddress(this.currentLocation)
+                .then(address => {
+                    locationStatus.textContent = address;
+                })
+                .catch(() => {
+                    locationStatus.textContent = 'Seoul, South Korea';
+                });
+        }
         
-        const nearbyLocations = this.findNearbyLocations();
-        
-        if (nearbyLocations.length > 0) {
-            locationInfo.innerHTML = `
-                <div class="success-state">
-                    <h3>📍 Nearby Attractions</h3>
-                    ${nearbyLocations.slice(0, 3).map(location => `
-                        <div style="margin: 8px 0; padding: 8px; border-left: 3px solid #4caf50;">
-                            <strong>${location.name}</strong><br>
-                            <small>${location.distance} away • ${location.category}</small>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        } else {
-            locationInfo.innerHTML = `
-                <div class="success-state">
-                    <h3>📍 Welcome to Seoul!</h3>
-                    <p>Explore popular destinations below to start your Korean adventure.</p>
-                </div>
-            `;
+        // Update location info section (only if element exists)
+        if (locationInfo) {
+            const nearbyLocations = this.findNearbyLocations();
+            
+            if (nearbyLocations.length > 0) {
+                locationInfo.innerHTML = `
+                    <div class="success-state">
+                        <h3>📍 Nearby Attractions</h3>
+                        ${nearbyLocations.slice(0, 3).map(location => `
+                            <div style="margin: 8px 0; padding: 8px; border-left: 3px solid #4caf50;">
+                                <strong>${location.name}</strong><br>
+                                <small>${location.distance} away • ${location.category}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                locationInfo.innerHTML = `
+                    <div class="success-state">
+                        <h3>📍 Welcome to Seoul!</h3>
+                        <p>Explore popular destinations below to start your Korean adventure.</p>
+                    </div>
+                `;
+            }
         }
 
         this.updateDistances();

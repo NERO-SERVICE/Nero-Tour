@@ -8,17 +8,17 @@ function getFirebaseConfig() {
         return window.CONFIG.FIREBASE_CONFIG;
     }
     
-    // Fallback configuration (for development/testing)
-    console.warn('Firebase config not found in CONFIG, using fallback');
-    return {
-        apiKey: "YOUR_API_KEY_NOT_FOUND",
-        authDomain: "YOUR_AUTH_DOMAIN_NOT_FOUND",
-        projectId: "YOUR_PROJECT_ID_NOT_FOUND",
-        storageBucket: "YOUR_STORAGE_BUCKET_NOT_FOUND",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID_NOT_FOUND",
-        appId: "YOUR_APP_ID_NOT_FOUND",
-        measurementId: "YOUR_MEASUREMENT_ID_NOT_FOUND"
-    };
+    return null; // No Firebase config available
+}
+
+// Check if Firebase config is valid
+function isFirebaseConfigValid(config) {
+    return config && 
+           config.apiKey && 
+           config.projectId && 
+           config.apiKey.length > 10 && 
+           !config.apiKey.includes('NOT_FOUND') &&
+           !config.apiKey.includes('undefined');
 }
 
 // Initialize Firebase when the page loads
@@ -32,9 +32,15 @@ function initializeFirebase() {
     try {
         const firebaseConfig = getFirebaseConfig();
         
+        // Check if Firebase config is valid
+        if (!isFirebaseConfigValid(firebaseConfig)) {
+            console.log('ℹ️ Firebase configuration not available or invalid - Firebase features will be disabled');
+            return false;
+        }
+        
         // Check if Firebase SDK is loaded from CDN
         if (typeof firebase === 'undefined') {
-            console.error('Firebase SDK not loaded. Please include Firebase CDN scripts.');
+            console.warn('Firebase SDK not loaded. Firebase features will be disabled.');
             return false;
         }
 
@@ -50,7 +56,7 @@ function initializeFirebase() {
             FirebaseAuth = firebase.auth();
         }
         
-        if (firebase.analytics) {
+        if (firebase.analytics && firebaseConfig.measurementId) {
             FirebaseAnalytics = firebase.analytics();
         }
         
@@ -58,11 +64,11 @@ function initializeFirebase() {
             FirebaseFunctions = firebase.functions();
         }
         
-        console.log('Firebase initialized successfully');
+        console.log('✅ Firebase initialized successfully');
         return true;
         
     } catch (error) {
-        console.error('Firebase initialization failed:', error);
+        console.warn('⚠️ Firebase initialization failed (continuing without Firebase):', error);
         return false;
     }
 }
