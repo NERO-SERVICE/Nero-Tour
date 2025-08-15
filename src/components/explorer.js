@@ -516,18 +516,126 @@ class SeoulExplorer {
     // showFavorites functionality removed for simplified UX
 
     showMap() {
-        // This method is overridden in SeoulExplorerEnhanced
-        // Handled by Enhanced version
+        // Hide locations section and show map section
+        const locationsSection = document.getElementById('locationsSection');
+        const mapSection = document.getElementById('mapSection');
+        
+        if (locationsSection) locationsSection.style.display = 'none';
+        if (mapSection) mapSection.style.display = 'block';
+        
+        // Initialize Google Maps if not already done
+        this.initializeMap();
     }
 
-    // showGuide functionality removed - integrated into Explore section
-
     showExplore() {
+        // Show locations section and hide map section
+        const locationsSection = document.getElementById('locationsSection');
+        const mapSection = document.getElementById('mapSection');
+        
+        if (locationsSection) locationsSection.style.display = 'block';
+        if (mapSection) mapSection.style.display = 'none';
+        
         const sectionTitle = document.querySelector('.locations-section h2');
-        sectionTitle.textContent = 'Popular Seoul Destinations';
+        if (sectionTitle) sectionTitle.textContent = 'Popular Seoul Destinations';
         this.renderLocationCards();
         this.updateDistances();
         this.addGuideToExplore();
+    }
+
+    initializeMap() {
+        // Check if Google Maps API is loaded
+        if (!window.google || !window.google.maps) {
+            console.warn('Google Maps API not loaded yet, waiting...');
+            setTimeout(() => this.initializeMap(), 1000);
+            return;
+        }
+
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) {
+            console.error('Map container not found');
+            return;
+        }
+
+        // Clear loading message
+        mapContainer.innerHTML = '';
+
+        // Default Seoul center
+        const seoulCenter = { lat: 37.5665, lng: 126.9780 };
+        const userLocation = this.currentLocation || seoulCenter;
+
+        // Create map
+        const map = new google.maps.Map(mapContainer, {
+            zoom: 12,
+            center: userLocation,
+            styles: [
+                {
+                    featureType: 'poi',
+                    elementType: 'labels',
+                    stylers: [{ visibility: 'on' }]
+                }
+            ]
+        });
+
+        // Add user location marker if available
+        if (this.currentLocation) {
+            new google.maps.Marker({
+                position: this.currentLocation,
+                map: map,
+                title: 'Your Location',
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                            <circle cx="10" cy="10" r="8" fill="#4285F4" stroke="white" stroke-width="2"/>
+                            <circle cx="10" cy="10" r="3" fill="white"/>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(20, 20)
+                }
+            });
+        }
+
+        // Add markers for all Seoul landmarks
+        const landmarks = this.getSeoulLandmarks();
+        landmarks.forEach(landmark => {
+            const marker = new google.maps.Marker({
+                position: landmark.coordinates,
+                map: map,
+                title: landmark.name,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(24, 24),
+                    anchor: new google.maps.Point(12, 24)
+                }
+            });
+
+            // Add info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="max-width: 250px;">
+                        <h3 style="margin: 0 0 8px 0; color: #333;">${landmark.name}</h3>
+                        <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">${landmark.nameKorean}</p>
+                        <p style="margin: 0 0 12px 0; font-size: 14px;">${landmark.description}</p>
+                        <div style="display: flex; gap: 8px;">
+                            ${landmark.tags.map(tag => `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 12px;">${tag}</span>`).join('')}
+                        </div>
+                        <button onclick="seoulExplorer.getDirections('${landmark.id}')" 
+                                style="margin-top: 12px; background: #1976d2; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            Get Directions
+                        </button>
+                    </div>
+                `
+            });
+
+            marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+            });
+        });
+
+        console.log('✅ Google Maps initialized successfully');
     }
 
     // Enhanced automatic location tracking system
@@ -1005,4 +1113,6 @@ document.head.appendChild(style);
 let seoulExplorer;
 document.addEventListener('DOMContentLoaded', () => {
     seoulExplorer = new SeoulExplorer();
+    // Make it globally accessible for Google Maps callback
+    window.seoulExplorer = seoulExplorer;
 });

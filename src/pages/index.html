@@ -37,8 +37,22 @@
             <!-- Popular Locations Grid -->
             <section class="locations-section" id="locationsSection">
                 <h2>Popular Seoul Destinations</h2>
+                <div id="locationInfo" class="location-info-section" style="margin-bottom: 20px;">
+                    <!-- Location info will be populated by JavaScript -->
+                </div>
                 <div class="locations-grid" id="locationsGrid">
                     <!-- Location buttons will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Map Section (hidden by default) -->
+            <section class="map-section" id="mapSection" style="display: none;">
+                <h2>Seoul Map</h2>
+                <div id="map" class="map-container" style="width: 100%; height: 60vh; background: #f0f0f0; border-radius: 12px; position: relative;">
+                    <div class="map-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666;">
+                        <i class="fas fa-map-marker-alt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Loading map...</p>
+                    </div>
                 </div>
             </section>
 
@@ -83,6 +97,15 @@
             }
         }
         
+        // Google Maps initialization callback
+        window.initializeGoogleMaps = function() {
+            console.log('✅ Google Maps API loaded and ready');
+            if (window.seoulExplorer && typeof window.seoulExplorer.initializeMap === 'function') {
+                // Maps will be initialized when user clicks Map tab
+                console.log('📍 Google Maps ready for use');
+            }
+        };
+
         function loadGoogleMapsAPI() {
             // Environment detection and logging
             console.log('🗺️ Loading Google Maps API...');
@@ -144,19 +167,31 @@
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                if (typeof validateConfig === 'function' && validateConfig()) {
-                    loadGoogleMapsAPI();
+                if (typeof validateConfig === 'function') {
+                    if (validateConfig()) {
+                        console.log('✅ Configuration validation passed');
+                        loadGoogleMapsAPI();
+                    } else {
+                        console.warn('⚠️ Configuration validation failed - attempting to load Google Maps anyway');
+                        loadGoogleMapsAPI(); // Try to load anyway with available config
+                    }
                 } else {
-                    console.error('Configuration validation failed');
-                    showMapError('Configuration validation failed. Please check your settings.');
+                    console.warn('⚠️ validateConfig function not found - loading Google Maps');
+                    loadGoogleMapsAPI();
                 }
             });
         } else {
-            if (typeof validateConfig === 'function' && validateConfig()) {
-                loadGoogleMapsAPI();
+            if (typeof validateConfig === 'function') {
+                if (validateConfig()) {
+                    console.log('✅ Configuration validation passed');
+                    loadGoogleMapsAPI();
+                } else {
+                    console.warn('⚠️ Configuration validation failed - attempting to load Google Maps anyway');
+                    loadGoogleMapsAPI(); // Try to load anyway with available config
+                }
             } else {
-                console.error('Configuration validation failed');
-                showMapError('Configuration validation failed. Please check your settings.');
+                console.warn('⚠️ validateConfig function not found - loading Google Maps');
+                loadGoogleMapsAPI();
             }
         }
     </script>
