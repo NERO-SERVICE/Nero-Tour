@@ -5,17 +5,43 @@ const path = require('path');
 
 console.log('🚀 Starting build process...');
 
-// Read environment variables
-const envVars = {
-    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_NOT_SET',
-    FIREBASE_API_KEY: process.env.FIREBASE_API_KEY || 'YOUR_FIREBASE_API_KEY_NOT_SET',
-    FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN || 'your-project.firebaseapp.com',
-    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || 'your-project-id',
-    FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET || 'your-project.appspot.com',
-    FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID || '123456789012',
-    FIREBASE_APP_ID: process.env.FIREBASE_APP_ID || '1:123456789012:web:your-app-id',
-    FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID || 'G-YOUR-MEASUREMENT-ID'
-};
+// Detect environment
+const isNetlify = process.env.NETLIFY === 'true';
+const isLocal = !isNetlify && fs.existsSync(path.join(__dirname, '.env'));
+
+console.log(`📍 Environment detected: ${isNetlify ? 'Netlify' : isLocal ? 'Local (.env)' : 'Production'}`);
+
+// Load environment variables based on environment
+let envVars = {};
+
+if (isLocal) {
+    // Local development - load from .env file
+    console.log('📁 Loading from .env file...');
+    require('dotenv').config();
+    envVars = {
+        GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_NOT_SET',
+        FIREBASE_API_KEY: process.env.FIREBASE_API_KEY || 'YOUR_FIREBASE_API_KEY_NOT_SET',
+        FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN || 'your-project.firebaseapp.com',
+        FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || 'your-project-id',
+        FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET || 'your-project.appspot.com',
+        FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID || '123456789012',
+        FIREBASE_APP_ID: process.env.FIREBASE_APP_ID || '1:123456789012:web:your-app-id',
+        FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID || 'G-YOUR-MEASUREMENT-ID'
+    };
+} else {
+    // Netlify or production - use environment variables
+    console.log('☁️ Loading from environment variables...');
+    envVars = {
+        GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_NOT_SET',
+        FIREBASE_API_KEY: process.env.FIREBASE_API_KEY || 'YOUR_FIREBASE_API_KEY_NOT_SET',
+        FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN || 'your-project.firebaseapp.com',
+        FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || 'your-project-id',
+        FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET || 'your-project.appspot.com',
+        FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID || '123456789012',
+        FIREBASE_APP_ID: process.env.FIREBASE_APP_ID || '1:123456789012:web:your-app-id',
+        FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID || 'G-YOUR-MEASUREMENT-ID'
+    };
+}
 
 console.log('📝 Environment variables loaded:');
 Object.keys(envVars).forEach(key => {
@@ -91,8 +117,9 @@ window.validateConfig = validateConfig;
 // Build info
 window.BUILD_INFO = {
     timestamp: "${new Date().toISOString()}",
-    environment: "${process.env.NODE_ENV || 'production'}",
-    version: "1.0.0"
+    environment: "${isNetlify ? 'netlify' : isLocal ? 'local' : 'production'}",
+    version: "1.0.0",
+    source: "${isLocal ? '.env file' : 'environment variables'}"
 };
 `;
 

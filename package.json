@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "node build.js",
-    "dev": "python3 -m http.server 8000",
-    "start": "npm run build"
+    "dev": "npm run build && python3 -m http.server 8000",
+    "dev:watch": "npm run build && python3 -m http.server 8000 --directory ./",
+    "start": "npm run build",
+    "serve": "python3 -m http.server 8000"
   },
   "keywords": ["seoul", "tourism", "maps", "travel"],
   "author": "Seoul Explorer Team",
@@ -20,5 +22,8 @@
     "@firebase/firestore": "^4.9.0",
     "@firebase/functions": "^0.13.0",
     "firebase": "^12.1.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0"
   }
 }

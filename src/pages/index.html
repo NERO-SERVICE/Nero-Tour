@@ -64,28 +64,99 @@
     
     <!-- Google Maps API -->
     <script>
+        // Global error handler for Google Maps
+        window.gm_authFailure = function() {
+            console.error('Google Maps authentication failed');
+            showMapError('Google Maps authentication failed. Please check your API key.');
+        };
+        
+        function showMapError(message) {
+            const mapContainer = document.getElementById('map');
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: #666;">
+                        <h3>Map Loading Error</h3>
+                        <p>${message}</p>
+                        <p>Please check your internet connection and try again.</p>
+                    </div>
+                `;
+            }
+        }
+        
         function loadGoogleMapsAPI() {
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async&language=en&region=US`;
-            script.async = true;
-            script.defer = false;
+            // Environment detection and logging
+            console.log('🗺️ Loading Google Maps API...');
+            console.log('📍 Environment:', window.BUILD_INFO?.environment || 'unknown');
+            console.log('📁 Config source:', window.BUILD_INFO?.source || 'unknown');
             
-            script.onerror = function() {
-                console.error("Google Maps API loading failed");
+            // Validate API key first
+            if (!CONFIG.GOOGLE_MAPS_API_KEY || 
+                CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET') || 
+                CONFIG.GOOGLE_MAPS_API_KEY.includes('YOUR_API_KEY') ||
+                CONFIG.GOOGLE_MAPS_API_KEY.length < 20) {
+                console.error('❌ Invalid Google Maps API key:', {
+                    exists: !!CONFIG.GOOGLE_MAPS_API_KEY,
+                    length: CONFIG.GOOGLE_MAPS_API_KEY?.length,
+                    startsWithAIza: CONFIG.GOOGLE_MAPS_API_KEY?.startsWith('AIza'),
+                    environment: window.BUILD_INFO?.environment
+                });
+                showMapError('Google Maps API key is not configured properly.');
+                return;
+            }
+            
+            console.log('✅ API key validation passed');
+            console.log('🔑 API key preview:', CONFIG.GOOGLE_MAPS_API_KEY.substring(0, 10) + '...');
+            
+            // Check if already loaded
+            if (window.google && window.google.maps) {
+                console.log('♻️ Google Maps API already loaded');
+                if (typeof window.initializeGoogleMaps === 'function') {
+                    window.initializeGoogleMaps();
+                }
+                return;
+            }
+            
+            const script = document.createElement('script');
+            const apiUrl = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async&language=en&region=US&v=weekly`;
+            script.src = apiUrl;
+            script.async = true;
+            script.defer = true;
+            
+            console.log('📡 Loading Google Maps API from:', apiUrl.substring(0, 80) + '...');
+            
+            script.onerror = function(error) {
+                console.error("❌ Google Maps API loading failed:", error);
+                console.error("🔍 Possible causes:");
+                console.error("  - Network connection issue");
+                console.error("  - Invalid API key");
+                console.error("  - Domain restrictions in Google Cloud Console");
+                console.error("  - API not enabled in Google Cloud Console");
+                showMapError('Failed to load Google Maps. Check console for details.');
+            };
+            
+            script.onload = function() {
+                console.log('✅ Google Maps script loaded successfully');
             };
             
             document.head.appendChild(script);
         }
         
+        // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                if (validateConfig()) {
+                if (typeof validateConfig === 'function' && validateConfig()) {
                     loadGoogleMapsAPI();
+                } else {
+                    console.error('Configuration validation failed');
+                    showMapError('Configuration validation failed. Please check your settings.');
                 }
             });
         } else {
-            if (validateConfig()) {
+            if (typeof validateConfig === 'function' && validateConfig()) {
                 loadGoogleMapsAPI();
+            } else {
+                console.error('Configuration validation failed');
+                showMapError('Configuration validation failed. Please check your settings.');
             }
         }
     </script>
