@@ -1,10 +1,28 @@
-# 🗺️ Seoul Explorer with Google Maps
+# 🗺️ Seoul Explorer
 
-Google Maps API가 통합된 서울 관광 가이드 앱입니다.
+A mobile-friendly web application for exploring Seoul's landmarks and attractions with integrated Google Maps functionality.
 
-## 🚀 빠른 시작 가이드
+## 🚀 Setup Guide
 
-### 1. API 키 설정
+### 1. Environment Configuration
+
+Create a `.env` file in the project root with your API keys:
+
+```env
+# Google Maps API Key - Required
+GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
+
+# Firebase Configuration - Optional
+FIREBASE_API_KEY=your_firebase_api_key
+FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=123456789012
+FIREBASE_APP_ID=1:123456789012:web:your-app-id
+FIREBASE_MEASUREMENT_ID=G-YOUR-MEASUREMENT-ID
+```
+
+### 2. Google Cloud Console Setup
 
 1. **Google Cloud Console** 접속: https://console.cloud.google.com
 2. **새 프로젝트 생성** 또는 기존 프로젝트 선택
@@ -21,123 +39,68 @@ Google Maps API가 통합된 서울 관광 가이드 앱입니다.
    - 애플리케이션 제한사항: HTTP 리퍼러 (your-domain.com/*)
    - API 제한사항: 위 5개 API만 선택
 
-### 2. 설정 파일 수정
-
-`config.js` 파일을 열고 발급받은 API 키를 입력하세요:
-
-```javascript
-const CONFIG = {
-    GOOGLE_MAPS_API_KEY: "여기에_발급받은_API_키_입력",
-    // ... 나머지 설정
-};
-```
-
-### 3. 실행
-
-웹 서버에서 `index.html` 파일을 실행하면 됩니다.
+### 3. Local Development
 
 ```bash
-# 간단한 로컬 서버 실행 (Python 3)
-python -m http.server 8000
+# Install dependencies
+npm install
 
-# 또는 Node.js
-npx http-server
-
-# 브라우저에서 http://localhost:8000 접속
+# Run development server
+npm run dev
 ```
 
-## 📁 파일 구조
+This will:
+- Build the config from your `.env` file
+- Start a local server at http://localhost:8000
+
+### 4. Netlify Deployment
+
+1. Set environment variables in Netlify Dashboard → Environment variables:
+   - `GOOGLE_MAPS_API_KEY` = your actual API key
+   - (Optional) Firebase variables if using Firebase features
+
+2. The build will automatically use `build-netlify.js` for Netlify deployment
+
+### 5. Important Security Notes
+
+- ✅ `.env` file is ignored by git for security
+- ✅ No API keys are hardcoded in the source code
+- ✅ API keys are loaded from environment variables only
+- ⚠️ Make sure to set domain restrictions in Google Cloud Console
+
+## 📁 File Structure
 
 ```
 nero_tour/
-├── index.html          # 메인 HTML 파일
-├── styles.css          # CSS 스타일 (지도 스타일 포함)
-├── app.js              # 기본 Seoul Explorer 클래스
-├── config.js           # 🔑 API 키 설정 파일
-├── maps-manager.js     # Google Maps 관리 클래스  
-├── enhanced-app.js     # Maps 통합 Enhanced 앱
-└── README.md           # 이 파일
+├── .env                    # 🔑 Local environment variables (not in git)
+├── build.js               # Local build script
+├── build-netlify.js       # Netlify build script
+├── package.json           # Dependencies and scripts
+├── netlify.toml           # Netlify deployment configuration
+├── src/
+│   ├── pages/
+│   │   ├── index.html     # Main page
+│   │   └── detail.html    # Detail page
+│   ├── config/
+│   │   ├── config.js      # Generated config (not in git)
+│   │   └── config.template.js
+│   ├── components/        # JavaScript components
+│   ├── services/          # Map and API services
+│   ├── styles/           # CSS files
+│   └── utils/            # Utility functions
+└── public/             # Static assets
 ```
 
-## 🗺️ 주요 기능
+## ✨ Features
 
-### ✅ 기존 기능
-- 6개 서울 주요 관광지 정보
-- 현재 위치 기반 거리 계산
-- 상세 정보 모달
-- 즐겨찾기 기능
-- 반응형 모바일 디자인
+- **Interactive Maps**: Google Maps integration with custom markers
+- **Location Services**: Current location detection and distance calculation  
+- **Seoul Landmarks**: Curated tourist attractions and landmarks
+- **Responsive Design**: Mobile-first responsive interface
+- **Secure Configuration**: Environment-based API key management
 
-### 🆕 새로 추가된 Google Maps 기능
-- **대화형 지도**: 실시간 지도 인터페이스
-- **커스텀 마커**: 카테고리별 색상 구분 마커
-- **정보창**: 마커 클릭 시 정보 표시
-- **검색 기능**: 장소 검색 (구현 예정)
-- **필터링**: 카테고리별 마커 필터
-- **내 위치**: 현재 위치로 지도 중심 이동
-- **길찾기**: Google Maps로 경로 안내
+## 🔧 Troubleshooting
 
-## 🎯 사용법
-
-1. **Explore 탭**: 기존 카드 형태의 관광지 목록
-2. **Map 탭**: 새로운 Google Maps 인터페이스
-3. **Favorites 탭**: 즐겨찾기한 장소들
-4. **Guide 탭**: 서울 여행 가이드 정보
-
-### Map 탭 사용법
-- 🔍 **검색**: 상단 검색창에서 장소 검색
-- 🏷️ **필터**: 카테고리별 마커 필터링
-- 📍 **내 위치**: 현재 위치로 지도 이동
-- 🗺️ **마커 클릭**: 상세 정보 및 길찾기 버튼
-
-## ⚠️ 주의사항
-
-1. **API 키 보안**: 
-   - 프로덕션에서는 환경변수 사용 권장
-   - 리퍼러 제한 설정 필수
-
-2. **HTTPS 필요**: 
-   - 위치 서비스는 HTTPS에서만 작동
-   - 로컬 개발: `localhost` 사용 가능
-
-3. **비용 관리**: 
-   - Google Maps API는 유료 서비스
-   - 예상 월 비용: $24-49 (중간 사용량 기준)
-
-## 🐞 문제 해결
-
-### API 키 오류
-```
-⚠️ Google Maps API 키를 config.js 파일에 설정해주세요!
-```
-→ `config.js`에서 API 키를 올바르게 설정했는지 확인
-
-### 지도 로딩 실패
-```
-⚠️ 지도 로딩 실패
-```
-→ API 키 유효성 및 인터넷 연결 확인
-
-### 위치 접근 권한
-```
-⚠️ Location Access Needed
-```
-→ 브라우저에서 위치 권한을 허용해주세요
-
-## 🔧 커스터마이징
-
-### 지도 스타일 변경
-`maps-manager.js`의 `getMapStyles()` 메서드에서 지도 스타일 커스터마이징 가능
-
-### 새로운 관광지 추가
-`app.js`의 `getSeoulLandmarks()` 메서드에 새로운 장소 데이터 추가
-
-### API 설정 변경
-`config.js`에서 지도 기본 설정, 위치 서비스 옵션 등 조정 가능
-
-## 📞 지원
-
-문제가 발생하면 콘솔(F12)을 확인하여 오류 메시지를 참고하세요.
-
----
-**Seoul Explorer Enhanced** - Google Maps로 더욱 생생한 서울 탐험! 🇰🇷
+- **Maps not loading**: Check your `.env` file has valid `GOOGLE_MAPS_API_KEY`
+- **403 errors**: Verify domain restrictions in Google Cloud Console
+- **Build fails**: Ensure `.env` file exists and contains required variables

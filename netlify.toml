@@ -1,6 +1,6 @@
 [build]
-  # Build command - run our environment variable injection script
-  command = "node build.js"
+  # Build command - run our Netlify-specific build script
+  command = "node build-netlify.js"
   
   # Publish directory - the root directory since it's a static site
   publish = "."

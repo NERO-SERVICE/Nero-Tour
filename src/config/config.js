@@ -9,12 +9,12 @@ const CONFIG = {
     // Firebase Configuration - Injected from environment
     FIREBASE_CONFIG: {
         apiKey: "AIzaSyC8K_example_firebase_key_12345",
-        authDomain: "your-project.firebaseapp.com",
-        projectId: "your-project-id",
-        storageBucket: "your-project.appspot.com",
+        authDomain: "nero-tour-seoul.firebaseapp.com",
+        projectId: "nero-tour-seoul",
+        storageBucket: "nero-tour-seoul.appspot.com",
         messagingSenderId: "123456789012",
-        appId: "1:123456789012:web:your-app-id",
-        measurementId: "G-YOUR-MEASUREMENT-ID"
+        appId: "1:123456789012:web:abcdef123456789",
+        measurementId: "G-EXAMPLE123"
     },
     
     // Map default settings
@@ -63,7 +63,8 @@ window.validateConfig = validateConfig;
 
 // Build info
 window.BUILD_INFO = {
-    timestamp: "2025-08-14T10:56:00.691Z",
-    environment: "production",
-    version: "1.0.0"
+    timestamp: "2025-08-15T06:21:38.470Z",
+    environment: "local",
+    version: "1.0.0",
+    source: ".env file"
 };

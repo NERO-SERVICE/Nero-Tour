@@ -3,19 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Starting build process...');
+console.log('🚀 Starting Netlify build process...');
 
-// Load environment variables from .env file only
-console.log('📁 Loading from .env file...');
-require('dotenv').config();
+// Read environment variables from Netlify environment
+console.log('☁️ Loading from Netlify environment variables...');
 
-// Check if .env file exists
-if (!fs.existsSync(path.join(__dirname, '.env'))) {
-    console.error('❌ .env file not found! Please create .env file with your API keys.');
-    process.exit(1);
-}
-
-// Read environment variables (no fallback values)
 const envVars = {
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
@@ -30,28 +22,28 @@ const envVars = {
 console.log('📝 Environment variables loaded:');
 Object.keys(envVars).forEach(key => {
     const value = envVars[key];
-    const maskedValue = value.length > 10 ? value.substring(0, 10) + '...' : value;
+    const maskedValue = value && value.length > 10 ? value.substring(0, 10) + '...' : value || 'NOT_SET';
     console.log(`   ${key}: ${maskedValue}`);
 });
 
 // Create the config file content
 const configContent = `// Seoul Explorer - Configuration File
-// 🚀 Auto-generated during build - DO NOT EDIT MANUALLY
-// Environment variables injected by Netlify build process
+// 🚀 Auto-generated during Netlify build - DO NOT EDIT MANUALLY
+// Environment variables injected from Netlify environment
 
 const CONFIG = {
-    // Google Maps API Key - Injected from environment
-    GOOGLE_MAPS_API_KEY: "${envVars.GOOGLE_MAPS_API_KEY}",
+    // Google Maps API Key - Injected from Netlify environment
+    GOOGLE_MAPS_API_KEY: "${envVars.GOOGLE_MAPS_API_KEY || ''}",
     
-    // Firebase Configuration - Injected from environment
+    // Firebase Configuration - Injected from Netlify environment
     FIREBASE_CONFIG: {
-        apiKey: "${envVars.FIREBASE_API_KEY}",
-        authDomain: "${envVars.FIREBASE_AUTH_DOMAIN}",
-        projectId: "${envVars.FIREBASE_PROJECT_ID}",
-        storageBucket: "${envVars.FIREBASE_STORAGE_BUCKET}",
-        messagingSenderId: "${envVars.FIREBASE_MESSAGING_SENDER_ID}",
-        appId: "${envVars.FIREBASE_APP_ID}",
-        measurementId: "${envVars.FIREBASE_MEASUREMENT_ID}"
+        apiKey: "${envVars.FIREBASE_API_KEY || ''}",
+        authDomain: "${envVars.FIREBASE_AUTH_DOMAIN || ''}",
+        projectId: "${envVars.FIREBASE_PROJECT_ID || ''}",
+        storageBucket: "${envVars.FIREBASE_STORAGE_BUCKET || ''}",
+        messagingSenderId: "${envVars.FIREBASE_MESSAGING_SENDER_ID || ''}",
+        appId: "${envVars.FIREBASE_APP_ID || ''}",
+        measurementId: "${envVars.FIREBASE_MEASUREMENT_ID || ''}"
     },
     
     // Map default settings
@@ -85,13 +77,17 @@ const CONFIG = {
 function validateConfig() {
     const hasValidMapsKey = CONFIG.GOOGLE_MAPS_API_KEY && 
                            CONFIG.GOOGLE_MAPS_API_KEY.length > 20 && 
-                           !CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET');
+                           CONFIG.GOOGLE_MAPS_API_KEY.startsWith('AIza');
     
-    const hasValidFirebaseKey = CONFIG.FIREBASE_CONFIG.apiKey && 
-                               CONFIG.FIREBASE_CONFIG.apiKey.length > 20 && 
-                               !CONFIG.FIREBASE_CONFIG.apiKey.includes('NOT_SET');
+    if (!hasValidMapsKey) {
+        console.error('Invalid Google Maps API key:', {
+            exists: !!CONFIG.GOOGLE_MAPS_API_KEY,
+            length: CONFIG.GOOGLE_MAPS_API_KEY?.length,
+            startsWithAIza: CONFIG.GOOGLE_MAPS_API_KEY?.startsWith('AIza')
+        });
+    }
     
-    return hasValidMapsKey && hasValidFirebaseKey;
+    return hasValidMapsKey;
 }
 
 // Export for global use
@@ -101,9 +97,9 @@ window.validateConfig = validateConfig;
 // Build info
 window.BUILD_INFO = {
     timestamp: "${new Date().toISOString()}",
-    environment: "local",
+    environment: "netlify",
     version: "1.0.0",
-    source: ".env file"
+    source: "netlify environment variables"
 };
 `;
 
@@ -115,7 +111,6 @@ console.log('✅ Config file generated:', configPath);
 
 // Validate that all required environment variables are set
 const missingVars = [];
-const requiredVars = ['GOOGLE_MAPS_API_KEY'];
 
 Object.keys(envVars).forEach(key => {
     if (!envVars[key] || envVars[key].trim() === '') {
@@ -126,7 +121,7 @@ Object.keys(envVars).forEach(key => {
 if (missingVars.length > 0) {
     console.error('❌ Missing required environment variables:');
     missingVars.forEach(key => console.error(`   - ${key}`));
-    console.error('   Please check your .env file');
+    console.error('   Please set these in your Netlify dashboard Environment variables');
     
     // Check if Google Maps API key is missing (critical)
     if (missingVars.includes('GOOGLE_MAPS_API_KEY')) {
@@ -135,4 +130,4 @@ if (missingVars.length > 0) {
     }
 }
 
-console.log('🎉 Build completed successfully!');
+console.log('🎉 Netlify build completed successfully!');
