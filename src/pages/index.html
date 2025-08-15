@@ -86,6 +86,71 @@
             }
         }
         
+        // Direct map navigation function (backup method)
+        window.openMapPageDirect = function() {
+            console.log('🗺️ Direct map navigation triggered');
+            
+            try {
+                // Show immediate visual feedback
+                const mapButton = document.querySelector('.nav-item[data-section="map"]');
+                if (mapButton) {
+                    mapButton.style.opacity = '0.7';
+                    mapButton.innerHTML = `
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading...</span>
+                    `;
+                }
+
+                // Multiple navigation attempts
+                const attempts = [
+                    () => window.location.href = 'map.html',
+                    () => window.location.assign('map.html'),
+                    () => window.location.replace('map.html'),
+                    () => window.location.href = './map.html',
+                    () => window.location.href = '/src/pages/map.html'
+                ];
+
+                attempts.forEach((attempt, index) => {
+                    setTimeout(() => {
+                        try {
+                            console.log(`🔄 Navigation attempt ${index + 1}`);
+                            attempt();
+                        } catch (error) {
+                            console.warn(`⚠️ Attempt ${index + 1} failed:`, error);
+                        }
+                    }, index * 50);
+                });
+
+            } catch (error) {
+                console.error('❌ Direct navigation failed:', error);
+                alert('Could not open map. Please refresh the page and try again.');
+            }
+        };
+
+        // Add click event listener to map button as backup
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📱 Adding backup map button listener...');
+            
+            const mapButton = document.querySelector('.nav-item[data-section="map"]');
+            if (mapButton) {
+                // Remove any existing onclick to avoid double execution
+                mapButton.removeAttribute('onclick');
+                
+                // Add new click handler
+                mapButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🗺️ Map button clicked (backup handler)');
+                    
+                    openMapPageDirect();
+                }, { passive: false });
+                
+                console.log('✅ Backup map button listener added');
+            } else {
+                console.error('❌ Map button not found for backup listener');
+            }
+        });
+
         // Main page initialization - Map functionality moved to separate page
         console.log('🚀 Seoul Explorer main page loaded');
         console.log('📍 Environment:', window.BUILD_INFO?.environment || 'unknown');

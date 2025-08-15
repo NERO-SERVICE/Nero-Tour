@@ -475,20 +475,67 @@ class SeoulExplorer {
 
     // Initialize event listeners
     initializeEventListeners() {
+        console.log('🎯 Initializing event listeners...');
 
         // Start automatic location tracking (no manual refresh needed)
         this.startAutoLocationTracking();
 
-        // Bottom navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
+        // Bottom navigation with enhanced debugging
+        const navItems = document.querySelectorAll('.nav-item');
+        console.log(`📱 Found ${navItems.length} navigation items`);
+        
+        navItems.forEach((item, index) => {
+            const section = item.dataset.section;
+            console.log(`📍 Nav item ${index}: section="${section}"`);
+            
             item.addEventListener('click', (e) => {
-                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                e.target.closest('.nav-item').classList.add('active');
+                console.log('🔘 Navigation item clicked:', section);
                 
-                const section = e.target.closest('.nav-item').dataset.section;
-                this.handleNavigation(section);
+                try {
+                    // Update active state
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    e.target.closest('.nav-item').classList.add('active');
+                    
+                    // Get section from clicked element
+                    const clickedSection = e.target.closest('.nav-item').dataset.section;
+                    console.log('🎯 Navigating to section:', clickedSection);
+                    
+                    // Handle navigation with error handling
+                    this.handleNavigation(clickedSection);
+                    
+                } catch (error) {
+                    console.error('❌ Navigation error:', error);
+                    
+                    // Force map page navigation if it was a map click
+                    if (section === 'map' || clickedSection === 'map') {
+                        console.log('🗺️ Forcing map page navigation...');
+                        this.forceMapNavigation();
+                    }
+                }
             });
         });
+
+        // Add additional debugging for map button specifically
+        const mapButton = document.querySelector('.nav-item[data-section="map"]');
+        if (mapButton) {
+            console.log('✅ Map button found and listener attached');
+            
+            // Add additional click listener as backup
+            mapButton.addEventListener('click', (e) => {
+                console.log('🗺️ Map button clicked (backup listener)');
+                e.preventDefault();
+                this.forceMapNavigation();
+            }, { once: false, passive: false });
+            
+        } else {
+            console.error('❌ Map button not found!');
+            console.log('🔍 Available nav items:', 
+                Array.from(navItems).map(item => ({
+                    section: item.dataset.section,
+                    text: item.textContent.trim()
+                }))
+            );
+        }
     }
 
     // Navigation functionality
@@ -504,21 +551,206 @@ class SeoulExplorer {
     }
 
     handleNavigation(section) {
-        switch(section) {
-            case 'map':
-                this.openMapPage();
-                break;
-            default:
-                this.showExplore();
+        console.log('🎯 handleNavigation called with section:', section);
+        
+        try {
+            switch(section) {
+                case 'map':
+                    this.openMapPage();
+                    break;
+                default:
+                    this.showExplore();
+            }
+        } catch (error) {
+            console.error('❌ Navigation handler error:', error);
+            
+            // Fallback navigation
+            if (section === 'map') {
+                this.forceMapNavigation();
+            }
         }
     }
 
     // showFavorites functionality removed for simplified UX
 
     openMapPage() {
-        // Navigate to dedicated map page
         console.log('🗺️ Opening map page...');
-        window.location.href = 'map.html';
+        
+        try {
+            // Show loading state immediately
+            this.showMapLoadingState();
+            
+            // Multiple navigation attempts for reliability
+            this.attemptMapNavigation();
+            
+        } catch (error) {
+            console.error('❌ openMapPage error:', error);
+            this.forceMapNavigation();
+        }
+    }
+
+    attemptMapNavigation() {
+        console.log('📍 Attempting map navigation...');
+        
+        // Method 1: Direct navigation
+        try {
+            window.location.href = 'map.html';
+            return;
+        } catch (error) {
+            console.warn('⚠️ Direct navigation failed:', error);
+        }
+
+        // Method 2: Using window.location.assign
+        try {
+            window.location.assign('map.html');
+            return;
+        } catch (error) {
+            console.warn('⚠️ location.assign failed:', error);
+        }
+
+        // Method 3: Relative path
+        try {
+            window.location.href = './map.html';
+            return;
+        } catch (error) {
+            console.warn('⚠️ Relative path failed:', error);
+        }
+
+        // Method 4: Full path
+        try {
+            const currentPath = window.location.pathname;
+            const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+            window.location.href = basePath + '/map.html';
+            return;
+        } catch (error) {
+            console.warn('⚠️ Full path failed:', error);
+        }
+
+        // Final fallback
+        this.forceMapNavigation();
+    }
+
+    forceMapNavigation() {
+        console.log('🚨 Force navigation to map page...');
+        
+        try {
+            // Show user that navigation is happening
+            this.showMapLoadingState();
+            
+            // Try different navigation methods
+            const navigationMethods = [
+                () => window.location.replace('map.html'),
+                () => window.location.href = '/src/pages/map.html',
+                () => window.location.assign('/src/pages/map.html'),
+                () => window.open('map.html', '_self'),
+                () => {
+                    // Create and click a link element
+                    const link = document.createElement('a');
+                    link.href = 'map.html';
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            ];
+
+            // Try each method with a delay
+            navigationMethods.forEach((method, index) => {
+                setTimeout(() => {
+                    try {
+                        console.log(`🔄 Trying navigation method ${index + 1}...`);
+                        method();
+                    } catch (error) {
+                        console.warn(`⚠️ Navigation method ${index + 1} failed:`, error);
+                    }
+                }, index * 100);
+            });
+
+        } catch (error) {
+            console.error('❌ All navigation methods failed:', error);
+            
+            // Last resort: Alert user
+            alert('Unable to open map page. Please try refreshing the page.');
+        }
+    }
+
+    showMapLoadingState() {
+        console.log('⏳ Showing map loading state...');
+        
+        try {
+            // Show visual feedback to user
+            const navButton = document.querySelector('.nav-item[data-section="map"]');
+            if (navButton) {
+                const originalContent = navButton.innerHTML;
+                navButton.innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading...</span>
+                `;
+                
+                // Restore original content after timeout
+                setTimeout(() => {
+                    navButton.innerHTML = originalContent;
+                }, 3000);
+            }
+
+            // Optional: Show overlay
+            this.showNavigationOverlay();
+
+        } catch (error) {
+            console.warn('⚠️ Could not show loading state:', error);
+        }
+    }
+
+    showNavigationOverlay() {
+        try {
+            // Create loading overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'navigation-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(102, 126, 234, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                color: white;
+                font-family: inherit;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                    <h3 style="margin: 0 0 8px 0;">Opening Seoul Map</h3>
+                    <p style="margin: 0; opacity: 0.8;">Please wait...</p>
+                </div>
+            `;
+
+            // Add animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(overlay);
+
+            // Remove overlay after timeout
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 5000);
+
+        } catch (error) {
+            console.warn('⚠️ Could not show overlay:', error);
+        }
     }
 
     showExplore() {

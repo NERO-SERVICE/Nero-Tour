@@ -282,12 +282,39 @@
     <script>
         // Navigation functions
         function goBack() {
-            // Check if we came from the main app
-            if (document.referrer && document.referrer.includes('index.html')) {
-                window.history.back();
-            } else {
-                // Fallback to main page
-                window.location.href = 'index.html';
+            console.log('🔙 Going back to main page...');
+            
+            try {
+                // Multiple back navigation attempts
+                const backMethods = [
+                    () => {
+                        if (document.referrer && document.referrer.includes('index.html')) {
+                            window.history.back();
+                        } else {
+                            throw new Error('No referrer or not from index.html');
+                        }
+                    },
+                    () => window.location.href = 'index.html',
+                    () => window.location.assign('index.html'),
+                    () => window.location.href = './index.html',
+                    () => window.location.href = '/src/pages/index.html'
+                ];
+
+                backMethods.forEach((method, index) => {
+                    setTimeout(() => {
+                        try {
+                            console.log(`🔄 Back navigation attempt ${index + 1}`);
+                            method();
+                        } catch (error) {
+                            console.warn(`⚠️ Back attempt ${index + 1} failed:`, error);
+                        }
+                    }, index * 50);
+                });
+
+            } catch (error) {
+                console.error('❌ Back navigation failed:', error);
+                // Force navigation to main page
+                window.location.href = '/';
             }
         }
         
