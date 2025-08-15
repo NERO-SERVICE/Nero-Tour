@@ -132,10 +132,15 @@ class SeoulMapManager {
                     <!-- Header with drag handle -->
                     <div class="bottom-sheet-header">
                         <div class="drag-handle"></div>
-                        <button class="close-button" onclick="this.closest('.landmark-bottom-sheet').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
                     </div>
+                    
+                    <!-- Floating close button -->
+                    <button class="floating-close-button" 
+                            onclick="this.closest('.landmark-bottom-sheet').remove()"
+                            ontouch="this.style.transform='scale(0.95)'"
+                            aria-label="Close landmark details">
+                        <i class="fas fa-times"></i>
+                    </button>
                     
                     <!-- Image Gallery -->
                     <div class="image-gallery-container">
@@ -261,31 +266,59 @@ class SeoulMapManager {
                 margin: 0 auto;
             }
             
-            .close-button {
+            .floating-close-button {
                 position: absolute;
-                top: 8px;
+                top: 16px;
                 right: 16px;
-                background: none;
+                width: 44px;
+                height: 44px;
+                background: rgba(255, 255, 255, 0.98);
+                backdrop-filter: blur(12px);
                 border: none;
-                font-size: 20px;
-                color: #666;
-                cursor: pointer;
-                padding: 8px;
                 border-radius: 50%;
-                transition: all 0.2s ease;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                color: #333;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 1001;
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                font-weight: 500;
+                -webkit-tap-highlight-color: transparent;
             }
             
-            .close-button:hover {
-                background: #f0f0f0;
-                color: #333;
+            .floating-close-button:hover {
+                background: rgba(248, 250, 252, 1);
+                color: #1f2937;
+                transform: scale(1.08);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .floating-close-button:active,
+            .floating-close-button:focus {
+                transform: scale(0.92);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+                background: rgba(243, 244, 246, 1);
+                outline: none;
+            }
+            
+            @media (hover: none) {
+                .floating-close-button:hover {
+                    transform: none;
+                    background: rgba(255, 255, 255, 0.98);
+                }
             }
             
             .image-gallery-container {
                 position: relative;
                 width: 100%;
-                height: 200px;
-                overflow: hidden;
-                background: #f8f9fa;
+                height: 240px;
+                padding: 64px 20px 20px 20px;
+                background: white;
+                margin-top: 0;
             }
             
             .image-gallery {
@@ -296,6 +329,10 @@ class SeoulMapManager {
                 scroll-snap-type: x mandatory;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
+                border-radius: 20px;
+                background: #f8f9fa;
+                padding: 8px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
             }
             
             .image-gallery::-webkit-scrollbar {
@@ -309,12 +346,17 @@ class SeoulMapManager {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                border-radius: 16px;
+                overflow: hidden;
+                margin: 0 4px;
             }
             
             .gallery-item img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                border-radius: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
             
             .image-fallback {
@@ -324,6 +366,8 @@ class SeoulMapManager {
                 width: 100%;
                 height: 100%;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
             
             .fallback-icon {
@@ -334,11 +378,12 @@ class SeoulMapManager {
             
             .gallery-indicators {
                 position: absolute;
-                bottom: 12px;
+                bottom: 8px;
                 left: 50%;
                 transform: translateX(-50%);
                 display: flex;
                 gap: 6px;
+                z-index: 10;
             }
             
             .indicator {
@@ -469,6 +514,9 @@ class SeoulMapManager {
         
         // Initialize image gallery interactions
         this.initializeImageGallery(landmark.id);
+        
+        // Add enhanced touch interactions for floating close button
+        this.setupFloatingCloseButton();
     }
 
     // Add touch gesture support for bottom sheet
@@ -537,6 +585,35 @@ class SeoulMapManager {
 
         // Store cleanup function for later use
         bottomSheet.addEventListener('remove', cleanup);
+    }
+
+    // Setup floating close button interactions
+    setupFloatingCloseButton() {
+        const closeButton = document.querySelector('.floating-close-button');
+        if (!closeButton) return;
+
+        // Add touch feedback
+        closeButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            closeButton.style.transform = 'scale(0.92)';
+            closeButton.style.transition = 'transform 0.1s ease';
+        });
+
+        closeButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            closeButton.style.transform = 'scale(1)';
+            closeButton.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            // Trigger click after animation
+            setTimeout(() => {
+                closeButton.click();
+            }, 100);
+        });
+
+        closeButton.addEventListener('touchcancel', (e) => {
+            closeButton.style.transform = 'scale(1)';
+            closeButton.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
     }
 
     // Add image gallery interactions (for future multiple images)
