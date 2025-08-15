@@ -4,6 +4,7 @@ class SeoulExplorer {
         this.currentLocation = null;
         this.selectedLocation = null;
         // Favorites functionality removed for simplified UX
+        this.debugMode = false; // Enable for testing
         
         this.init();
     }
@@ -12,6 +13,7 @@ class SeoulExplorer {
         this.initializeEventListeners();
         this.renderLocationCards();
         this.getCurrentLocation();
+        this.setupCardResizeObserver();
     }
 
     // Seoul Landmarks Data Structure
@@ -464,6 +466,185 @@ class SeoulExplorer {
                 </div>
             </button>
         `).join('');
+        
+        // Apply dynamic image height adjustments after rendering
+        this.adjustCardImageHeights();
+        
+        // Setup observers for new cards
+        setTimeout(() => {
+            this.observeLocationCards();
+            // Run tests in debug mode
+            if (this.debugMode) {
+                setTimeout(() => this.testTagScenarios(), 500);
+            }
+        }, 100);
+    }
+
+    // Dynamic image height adjustment based on tag content
+    adjustCardImageHeights() {
+        // Use requestAnimationFrame to ensure DOM is fully rendered
+        requestAnimationFrame(() => {
+            const cards = document.querySelectorAll('.location-card');
+            
+            cards.forEach(card => {
+                this.adjustSingleCardHeight(card);
+            });
+        });
+    }
+    
+    // Adjust height for a single card
+    adjustSingleCardHeight(card) {
+        const image = card.querySelector('.location-image');
+        const info = card.querySelector('.location-info');
+        const tags = card.querySelector('.location-tags');
+        const distanceInfo = card.querySelector('.distance-info');
+        
+        if (!image || !info || !tags) return;
+        
+        // Temporarily reset image height to measure content
+        image.style.height = 'auto';
+        
+        // Measure content dimensions
+        const cardWidth = card.offsetWidth;
+        const infoHeight = this.measureInfoContentHeight(info, tags, distanceInfo);
+        
+        // Calculate optimal image height
+        const targetCardHeight = this.getTargetCardHeight(cardWidth);
+        const optimalImageHeight = targetCardHeight - infoHeight;
+        
+        // Apply constraints and set height
+        const finalHeight = this.clampImageHeight(optimalImageHeight, cardWidth);
+        image.style.height = `${finalHeight}px`;
+        
+        // Debug logging (remove in production)
+        if (this.debugMode) {
+            console.log(`Card adjusted - Tags: ${tags.offsetHeight}px, Image: ${finalHeight}px`);
+        }
+    }
+    
+    // Measure the total height of info content
+    measureInfoContentHeight(info, tags, distanceInfo) {
+        const padding = 33; // 15px + 18px padding from CSS
+        const nameHeight = info.querySelector('.location-name')?.offsetHeight || 24;
+        const koreanHeight = info.querySelector('.location-korean')?.offsetHeight || 20;
+        const descHeight = info.querySelector('.location-description')?.offsetHeight || 36;
+        const tagHeight = tags.offsetHeight;
+        const distanceHeight = distanceInfo?.offsetHeight || 36;
+        const gaps = 16; // Margins between elements
+        
+        return padding + nameHeight + koreanHeight + descHeight + tagHeight + distanceHeight + gaps;
+    }
+    
+    // Get target card height based on viewport/container size
+    getTargetCardHeight(cardWidth) {
+        if (cardWidth <= 280) {
+            return 320; // Mobile/small cards
+        } else if (cardWidth <= 350) {
+            return 340; // Medium cards
+        } else {
+            return 360; // Large cards
+        }
+    }
+    
+    // Clamp image height within acceptable bounds
+    clampImageHeight(height, cardWidth) {
+        let minHeight = 160;
+        let maxHeight = 280;
+        
+        // Adjust constraints based on card size
+        if (cardWidth <= 280) {
+            minHeight = 140;
+            maxHeight = 220;
+        } else if (cardWidth >= 400) {
+            minHeight = 180;
+            maxHeight = 320;
+        }
+        
+        return Math.max(minHeight, Math.min(maxHeight, height));
+    }
+    
+    // Setup ResizeObserver for responsive card adjustments
+    setupCardResizeObserver() {
+        if (!window.ResizeObserver) {
+            // Fallback for older browsers
+            window.addEventListener('resize', this.debounce(() => {
+                this.adjustCardImageHeights();
+            }, 250));
+            return;
+        }
+        
+        this.cardResizeObserver = new ResizeObserver(entries => {
+            // Debounce resize adjustments to prevent excessive calculations
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(() => {
+                entries.forEach(entry => {
+                    if (entry.target.classList.contains('location-card')) {
+                        this.adjustSingleCardHeight(entry.target);
+                    }
+                });
+            }, 100);
+        });
+        
+        // Observe all location cards
+        this.observeLocationCards();
+    }
+    
+    // Observe location cards for resize changes
+    observeLocationCards() {
+        const cards = document.querySelectorAll('.location-card');
+        cards.forEach(card => {
+            if (this.cardResizeObserver) {
+                this.cardResizeObserver.observe(card);
+            }
+        });
+    }
+    
+    // Debounce utility function
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Test function to validate different tag combinations
+    testTagScenarios() {
+        if (!this.debugMode) return;
+        
+        console.log('🧪 Testing Dynamic Image Heights:');
+        
+        const cards = document.querySelectorAll('.location-card');
+        cards.forEach((card, index) => {
+            const image = card.querySelector('.location-image');
+            const tags = card.querySelector('.location-tags');
+            const tagCount = tags.children.length;
+            const tagHeight = tags.offsetHeight;
+            const imageHeight = parseInt(image.style.height);
+            const locationName = card.querySelector('.location-name').textContent;
+            
+            console.log(`Card ${index + 1} (${locationName}):`, {
+                tags: tagCount,
+                tagHeight: `${tagHeight}px`,
+                imageHeight: `${imageHeight}px`,
+                tagLines: Math.ceil(tagHeight / 28)
+            });
+        });
+    }
+    
+    // Cleanup method for observers
+    cleanup() {
+        if (this.cardResizeObserver) {
+            this.cardResizeObserver.disconnect();
+        }
+        if (this.resizeTimeout) {
+            clearTimeout(this.resizeTimeout);
+        }
+        this.stopAutoLocationTracking();
     }
 
     // Navigate to detail page

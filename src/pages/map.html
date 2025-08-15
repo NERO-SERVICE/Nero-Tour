@@ -20,17 +20,21 @@
     
     <style>
         .map-page {
+            max-width: 414px; /* iPhone Pro Max width - mobile-centric design */
+            width: 100%;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 0;
-            margin: 0;
+            margin: 0 auto; /* Center on desktop */
+            overflow-x: hidden;
+            box-shadow: 0 0 30px rgba(0,0,0,0.15); /* Desktop frame effect */
         }
         
         .map-header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px);
+            padding: 12px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -40,51 +44,61 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            max-width: 1200px;
-            margin: 0 auto;
         }
         
         .back-button {
             background: #667eea;
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
+            padding: 12px;
+            border-radius: 50%; /* Circular button */
+            font-size: 18px;
+            font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
+            justify-content: center;
+            transition: all 0.3s ease;
+            width: 48px;
+            height: 48px;
+            min-height: 44px; /* Touch target */
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         
-        .back-button:hover {
+        .back-button:active {
             background: #5a6fd8;
-            transform: translateY(-1px);
+            transform: translateY(1px);
+            box-shadow: 0 1px 5px rgba(102, 126, 234, 0.4);
         }
         
         .map-title {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             color: #333;
             margin: 0;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-weight: 600;
         }
         
         .location-display {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #666;
             display: flex;
             align-items: center;
             gap: 6px;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .map-container {
             width: 100%;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 68px); /* Adjusted for mobile header */
             position: relative;
             background: #f0f0f0;
+            touch-action: manipulation; /* Optimize touch performance */
         }
         
         .map-loading {
@@ -95,16 +109,28 @@
             text-align: center;
             color: #666;
             z-index: 100;
+            padding: 20px;
         }
         
         .loading-spinner {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
+            margin: 0 auto 20px;
+        }
+        
+        .map-loading h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .map-loading p {
+            font-size: 0.9rem;
+            color: #666;
         }
         
         @keyframes spin {
@@ -114,105 +140,39 @@
         
         .map-controls {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 16px;
+            right: 16px;
             z-index: 1000;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         
         .control-button {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            width: 48px;  /* Larger touch targets for mobile */
+            height: 48px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             color: #333;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            min-height: 44px; /* iOS touch target requirement */
         }
         
-        .control-button:hover {
+        .control-button:active {
             background: #667eea;
             color: white;
-            transform: scale(1.1);
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         
-        .map-legend {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            z-index: 1000;
-            min-width: 200px;
-        }
-        
-        .legend-title {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 6px 0;
-            font-size: 13px;
-            color: #666;
-        }
-        
-        .legend-marker {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        
-        .user-marker {
-            background: #4285F4;
-            border: 2px solid white;
-        }
-        
-        .attraction-marker {
-            background: #EA4335;
-            border: 2px solid white;
-        }
-        
-        @media (max-width: 768px) {
-            .map-header-content {
-                padding: 0 10px;
-            }
-            
-            .map-title {
-                font-size: 1.1rem;
-            }
-            
-            .location-display {
-                font-size: 0.8rem;
-            }
-            
-            .map-legend {
-                left: 10px;
-                bottom: 10px;
-                min-width: 160px;
-                padding: 12px;
-            }
-            
-            .map-controls {
-                top: 10px;
-                right: 10px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -222,7 +182,6 @@
             <div class="map-header-content">
                 <button class="back-button" onclick="goBack()">
                     <i class="fas fa-arrow-left"></i>
-                    Back
                 </button>
                 <div class="header-center">
                     <h1 class="map-title">
@@ -259,21 +218,6 @@
             </button>
         </div>
 
-        <!-- Map Legend -->
-        <div class="map-legend">
-            <div class="legend-title">Map Legend</div>
-            <div class="legend-item">
-                <div class="legend-marker user-marker"></div>
-                <span>Your Location</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-marker attraction-marker"></div>
-                <span>Seoul Attractions</span>
-            </div>
-            <div style="margin-top: 8px; font-size: 12px; color: #999;">
-                Click markers for details
-            </div>
-        </div>
     </div>
 
     <!-- Map JavaScript -->
@@ -282,40 +226,9 @@
     <script>
         // Navigation functions
         function goBack() {
-            console.log('🔙 Going back to main page...');
-            
-            try {
-                // Multiple back navigation attempts
-                const backMethods = [
-                    () => {
-                        if (document.referrer && document.referrer.includes('index.html')) {
-                            window.history.back();
-                        } else {
-                            throw new Error('No referrer or not from index.html');
-                        }
-                    },
-                    () => window.location.href = 'index.html',
-                    () => window.location.assign('index.html'),
-                    () => window.location.href = './index.html',
-                    () => window.location.href = '/src/pages/index.html'
-                ];
-
-                backMethods.forEach((method, index) => {
-                    setTimeout(() => {
-                        try {
-                            console.log(`🔄 Back navigation attempt ${index + 1}`);
-                            method();
-                        } catch (error) {
-                            console.warn(`⚠️ Back attempt ${index + 1} failed:`, error);
-                        }
-                    }, index * 50);
-                });
-
-            } catch (error) {
-                console.error('❌ Back navigation failed:', error);
-                // Force navigation to main page
-                window.location.href = '/';
-            }
+            console.log('🔙 Going back to index page...');
+            // Direct navigation to main index page - simple and reliable
+            window.location.href = 'index.html';
         }
         
         // Global error handler for Google Maps
@@ -328,11 +241,12 @@
             const mapContainer = document.getElementById('mapContainer');
             if (mapContainer) {
                 mapContainer.innerHTML = `
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-width: 400px;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ff6b6b; margin-bottom: 16px;"></i>
-                        <h3 style="color: #333; margin-bottom: 12px;">Map Loading Error</h3>
-                        <p style="color: #666; margin-bottom: 16px;">${message}</p>
-                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 24px; background: rgba(255,255,255,0.98); backdrop-filter: blur(15px); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-width: calc(100vw - 40px); border: 1px solid rgba(255,255,255,0.3);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 56px; color: #ff6b6b; margin-bottom: 20px;"></i>
+                        <h3 style="color: #333; margin-bottom: 16px; font-size: 1.3rem; font-weight: 600;">Map Loading Error</h3>
+                        <p style="color: #666; margin-bottom: 24px; font-size: 1rem; line-height: 1.5;">${message}</p>
+                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 14px 28px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: 500; min-height: 44px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">
+                            <i class="fas fa-redo" style="margin-right: 8px;"></i>
                             Try Again
                         </button>
                     </div>

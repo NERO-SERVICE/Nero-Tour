@@ -1,4 +1,4 @@
-// Seoul Map Manager - Dedicated map functionality
+// Seoul Map Manager - Dedicated map functionality with Custom Markers
 class SeoulMapManager {
     constructor() {
         this.map = null;
@@ -33,6 +33,7 @@ class SeoulMapManager {
                 description: 'Hillside park with panoramic Seoul views and ancient fortress walls',
                 coordinates: { lat: 37.5806, lng: 127.0075 },
                 icon: 'fas fa-mountain',
+                image: '../../public/assets/낙산공원.png',
                 tags: ['Historical', 'Views', 'Walking']
             },
             {
@@ -43,6 +44,7 @@ class SeoulMapManager {
                 description: 'Iconic communication tower offering panoramic city views',
                 coordinates: { lat: 37.5512, lng: 126.9882 },
                 icon: 'fas fa-broadcast-tower',
+                image: '../../public/assets/남산타워.png',
                 tags: ['Landmark', 'Views', 'Romance']
             },
             {
@@ -53,6 +55,7 @@ class SeoulMapManager {
                 description: 'Korea\'s premier shopping and beauty district',
                 coordinates: { lat: 37.5636, lng: 126.9824 },
                 icon: 'fas fa-shopping-bag',
+                image: '../../public/assets/명동.png',
                 tags: ['Shopping', 'Food', 'Beauty']
             },
             {
@@ -63,6 +66,7 @@ class SeoulMapManager {
                 description: 'Major subway interchange connecting eastern Seoul districts',
                 coordinates: { lat: 37.5342, lng: 127.0822 },
                 icon: 'fas fa-subway',
+                image: '../../public/assets/자양역.png',
                 tags: ['Transportation', 'Local Life', 'Residential']
             },
             {
@@ -73,6 +77,7 @@ class SeoulMapManager {
                 description: 'Korea\'s tallest skyscraper with shopping and observation decks',
                 coordinates: { lat: 37.5120, lng: 127.1020 },
                 icon: 'fas fa-building',
+                image: '../../public/assets/롯데월드타워.png',
                 tags: ['Modern', 'Views', 'Shopping']
             },
             {
@@ -83,6 +88,7 @@ class SeoulMapManager {
                 description: 'Major sports complex hosting baseball, soccer, and events',
                 coordinates: { lat: 37.5120, lng: 127.0719 },
                 icon: 'fas fa-futbol',
+                image: '../../public/assets/잠실주경기장.png',
                 tags: ['Sports', 'Entertainment', 'Olympics']
             },
             {
@@ -93,6 +99,7 @@ class SeoulMapManager {
                 description: 'Traditional Korean architecture village between palaces',
                 coordinates: { lat: 37.5825, lng: 126.9833 },
                 icon: 'fas fa-home',
+                image: '../../public/assets/북촌한옥마을.png',
                 tags: ['Traditional', 'Architecture', 'Culture']
             },
             {
@@ -103,17 +110,149 @@ class SeoulMapManager {
                 description: 'Major business district with COEX Mall and convention center',
                 coordinates: { lat: 37.5072, lng: 127.0553 },
                 icon: 'fas fa-briefcase',
+                image: '../../public/assets/삼성역.png',
                 tags: ['Business', 'Shopping', 'Modern']
             }
         ];
     }
 
+    // Create custom circular thumbnail marker with purple gradient
+    createCustomMarkerIcon(landmark) {        
+        // Create custom SVG marker with circular thumbnail and purple gradient border
+        const svgMarker = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="75" viewBox="0 0 60 75">
+                <defs>
+                    <linearGradient id="purpleGradient-${landmark.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#aa6dd8;stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="shadow-${landmark.id}" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="rgba(0,0,0,0.3)"/>
+                    </filter>
+                </defs>
+                
+                <!-- Outer gradient border circle -->
+                <circle cx="30" cy="25" r="22" fill="url(#purpleGradient-${landmark.id})" filter="url(#shadow-${landmark.id})" opacity="0.9"/>
+                
+                <!-- Inner white border -->
+                <circle cx="30" cy="25" r="20" fill="white"/>
+                
+                <!-- Thumbnail background -->
+                <circle cx="30" cy="25" r="18" fill="#f8f9fa" stroke="none"/>
+                
+                <!-- Category emoji icon -->
+                <text x="30" y="32" text-anchor="middle" fill="#667eea" font-size="18" font-family="system-ui">${this.getCategoryIcon(landmark.category)}</text>
+                
+                <!-- Pointer tail with gradient -->
+                <path d="M 30 47 L 24 60 L 36 60 Z" fill="url(#purpleGradient-${landmark.id})" filter="url(#shadow-${landmark.id})"/>
+                <path d="M 30 47 L 26 58 L 34 58 Z" fill="white"/>
+            </svg>
+        `;
+
+        return {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgMarker),
+            scaledSize: new google.maps.Size(60, 75),
+            anchor: new google.maps.Point(30, 75)
+        };
+    }
+
+    // Get category icon for markers
+    getCategoryIcon(category) {
+        const icons = {
+            'historical': '🏛️',
+            'landmark': '🗼', 
+            'shopping': '🛍️',
+            'modern': '🏢',
+            'cultural': '🏘️',
+            'default': '📍'
+        };
+        return icons[category] || icons.default;
+    }
+
+    // Add markers for Seoul attractions with custom icons
+    addAttractionMarkers() {
+        if (!this.map) return;
+
+        const landmarks = this.getSeoulLandmarks();
+        
+        landmarks.forEach(landmark => {
+            // Create custom circular thumbnail marker
+            const markerIcon = this.createCustomMarkerIcon(landmark);
+            
+            const marker = new google.maps.Marker({
+                position: landmark.coordinates,
+                map: this.map,
+                title: landmark.name,
+                icon: markerIcon,
+                zIndex: 100
+            });
+
+            // Create info window with enhanced content
+            const distance = this.currentLocation ? 
+                this.calculateDistance(
+                    this.currentLocation.lat,
+                    this.currentLocation.lng,
+                    landmark.coordinates.lat,
+                    landmark.coordinates.lng
+                ).toFixed(1) + ' km' : 'Distance unknown';
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 12px; max-width: 280px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <h3 style="margin: 0; color: #333; font-size: 1.1rem; font-weight: 600;">${landmark.name}</h3>
+                        </div>
+                        <div style="color: #666; font-size: 0.9rem; margin-bottom: 8px;">${landmark.nameKorean}</div>
+                        <p style="margin: 8px 0; color: #555; font-size: 0.9rem; line-height: 1.4;">${landmark.description}</p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0;">
+                            ${landmark.tags.map(tag => `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">${tag}</span>`).join('')}
+                        </div>
+                        <div style="color: #4caf50; font-weight: 500; font-size: 0.9rem; margin-top: 8px;">📍 ${distance}</div>
+                        <div style="margin-top: 12px;">
+                            <button onclick="seoulMapManager.getDirections('${landmark.id}')" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; margin-right: 8px;">
+                                📍 Directions
+                            </button>
+                            <button onclick="window.open('detail.html?location=${landmark.id}', '_blank')" style="background: #f8f9fa; color: #333; border: 1px solid #e9ecef; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.85rem;">
+                                ℹ️ Details
+                            </button>
+                        </div>
+                    </div>
+                `
+            });
+
+            // Store marker and info window reference
+            this.attractionMarkers.push({
+                marker: marker,
+                infoWindow: infoWindow,
+                landmark: landmark
+            });
+
+            // Add click listener
+            marker.addListener('click', () => {
+                // Close all other info windows
+                this.attractionMarkers.forEach(markerInfo => {
+                    if (markerInfo.infoWindow !== infoWindow) {
+                        markerInfo.infoWindow.close();
+                    }
+                });
+                infoWindow.open(this.map, marker);
+            });
+        });
+
+        console.log(`✅ Added ${landmarks.length} attraction markers with custom icons`);
+    }
+
+    // Rest of the methods remain the same...
     // Get current user location
     getCurrentLocation() {
         const locationText = document.getElementById('currentLocationText');
         
         if (!navigator.geolocation) {
-            this.handleLocationError('Geolocation not supported');
+            if (locationText) {
+                locationText.textContent = 'Geolocation not supported';
+            }
+            console.warn('⚠️ Geolocation is not supported by this browser');
             return;
         }
 
@@ -127,10 +266,30 @@ class SeoulMapManager {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                this.handleLocationSuccess();
+                
+                console.log('✅ User location obtained:', this.currentLocation);
+                
+                if (locationText) {
+                    locationText.textContent = `Seoul (${this.currentLocation.lat.toFixed(4)}, ${this.currentLocation.lng.toFixed(4)})`;
+                }
+                
+                // Update map if already initialized
+                if (this.map) {
+                    this.updateUserLocationOnMap();
+                }
             },
             (error) => {
-                this.handleLocationError(error.message);
+                console.error('❌ Error getting location:', error.message);
+                if (locationText) {
+                    locationText.textContent = 'Seoul, South Korea';
+                }
+                
+                // Use default Seoul coordinates
+                this.currentLocation = { lat: 37.5665, lng: 126.9780 };
+                
+                if (this.map) {
+                    this.updateUserLocationOnMap();
+                }
             },
             {
                 enableHighAccuracy: true,
@@ -140,139 +299,40 @@ class SeoulMapManager {
         );
     }
 
-    async handleLocationSuccess() {
-        console.log('📍 Location obtained:', this.currentLocation);
-        
-        try {
-            // Get English address
-            const address = await this.getEnglishAddress(this.currentLocation);
-            const locationText = document.getElementById('currentLocationText');
-            if (locationText) {
-                locationText.textContent = address;
-            }
-        } catch (error) {
-            console.warn('Address resolution failed:', error);
-            const locationText = document.getElementById('currentLocationText');
-            if (locationText) {
-                locationText.textContent = `Seoul (${this.currentLocation.lat.toFixed(4)}, ${this.currentLocation.lng.toFixed(4)})`;
-            }
-        }
-
-        // Update map if it's already initialized
-        if (this.map) {
-            this.updateUserLocationOnMap();
-        }
-    }
-
-    handleLocationError(errorMessage) {
-        console.error('Location error:', errorMessage);
-        const locationText = document.getElementById('currentLocationText');
-        if (locationText) {
-            locationText.textContent = 'Location unavailable';
-        }
-        
-        // Use Seoul center as fallback
-        this.currentLocation = { lat: 37.5665, lng: 126.9780 };
-    }
-
-    // Get English address from coordinates
-    async getEnglishAddress(coordinates) {
-        try {
-            if (!window.CONFIG || !CONFIG.GOOGLE_MAPS_API_KEY) {
-                throw new Error('Google Maps API key not available');
-            }
-
-            const response = await fetch(
-                `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates.lat},${coordinates.lng}&language=en&region=US&key=${CONFIG.GOOGLE_MAPS_API_KEY}`
-            );
-            
-            if (!response.ok) {
-                throw new Error('Geocoding request failed');
-            }
-            
-            const data = await response.json();
-            
-            if (data.status === 'OK' && data.results.length > 0) {
-                const result = data.results[0];
-                const components = result.address_components;
-                
-                let district = '';
-                let sublocality = '';
-                
-                components.forEach(component => {
-                    const types = component.types;
-                    if (types.includes('sublocality_level_1')) {
-                        district = component.long_name;
-                    } else if (types.includes('sublocality_level_2')) {
-                        sublocality = component.long_name;
-                    }
-                });
-                
-                let formattedAddress = 'Seoul';
-                if (district) {
-                    district = district.replace(/구$/, 'gu').replace(/동$/, 'dong');
-                    formattedAddress += `, ${district}`;
-                }
-                
-                return formattedAddress;
-            }
-            
-            throw new Error('No geocoding results found');
-        } catch (error) {
-            console.warn('Reverse geocoding failed:', error);
-            return 'Seoul, South Korea';
-        }
-    }
-
     // Initialize Google Maps
-    initializeMap() {
+    async initializeMap() {
         console.log('🗺️ Initializing Google Maps...');
         
         const mapContainer = document.getElementById('mapContainer');
-        const mapLoading = document.getElementById('mapLoading');
-        
         if (!mapContainer) {
-            console.error('Map container not found');
+            console.error('❌ Map container not found');
             return;
         }
 
-        // Default Seoul center
-        const seoulCenter = { lat: 37.5665, lng: 126.9780 };
-        const mapCenter = this.currentLocation || seoulCenter;
+        const mapLoading = document.getElementById('mapLoading');
 
         try {
-            // Create map with enhanced styling
+            // Default center (Seoul)
+            const seoulCenter = this.currentLocation || { lat: 37.5665, lng: 126.9780 };
+
+            // Initialize map
             this.map = new google.maps.Map(mapContainer, {
                 zoom: 12,
-                center: mapCenter,
-                mapTypeControl: true,
-                mapTypeControlOptions: {
-                    style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-                    position: google.maps.ControlPosition.TOP_CENTER,
-                },
-                zoomControl: true,
-                zoomControlOptions: {
-                    position: google.maps.ControlPosition.RIGHT_CENTER
-                },
-                scaleControl: true,
-                streetViewControl: true,
-                streetViewControlOptions: {
-                    position: google.maps.ControlPosition.RIGHT_TOP
-                },
-                fullscreenControl: false, // We'll use custom control
+                center: seoulCenter,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
                 styles: [
                     {
-                        featureType: 'poi',
-                        elementType: 'labels',
-                        stylers: [{ visibility: 'on' }]
-                    },
-                    {
-                        featureType: 'transit.station',
-                        elementType: 'labels',
-                        stylers: [{ visibility: 'on' }]
+                        "featureType": "poi",
+                        "elementType": "labels",
+                        "stylers": [{"visibility": "off"}]
                     }
-                ]
+                ],
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false
             });
+
+            console.log('✅ Map initialized successfully');
 
             // Hide loading screen
             if (mapLoading) {
@@ -282,17 +342,17 @@ class SeoulMapManager {
             // Add user location marker
             this.updateUserLocationOnMap();
 
-            // Add attraction markers
+            // Add attraction markers with custom icons
             this.addAttractionMarkers();
 
             // Initialize traffic layer
             this.trafficLayer = new google.maps.TrafficLayer();
 
-            console.log('✅ Google Maps initialized successfully');
-
         } catch (error) {
             console.error('❌ Map initialization failed:', error);
-            this.showMapError('Failed to initialize map. Please try again.');
+            if (mapLoading) {
+                mapLoading.innerHTML = '<h3>Map loading failed</h3><p>Please refresh the page to try again.</p>';
+            }
         }
     }
 
@@ -321,15 +381,15 @@ class SeoulMapManager {
                 scaledSize: new google.maps.Size(24, 24),
                 anchor: new google.maps.Point(12, 12)
             },
-            zIndex: 1000
+            zIndex: 999
         });
 
-        // Add click listener for user location
+        // Add info window for user location
         const userInfoWindow = new google.maps.InfoWindow({
             content: `
-                <div style="padding: 10px; text-align: center;">
-                    <h3 style="margin: 0 0 8px 0; color: #4285F4;">📍 Your Location</h3>
-                    <p style="margin: 0; color: #666; font-size: 14px;">You are here in Seoul!</p>
+                <div style="padding: 8px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                    <h4 style="margin: 0 0 4px 0; color: #4285F4;">📍 Your Location</h4>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Seoul, South Korea</p>
                 </div>
             `
         });
@@ -348,84 +408,6 @@ class SeoulMapManager {
         this.map.setCenter(this.currentLocation);
     }
 
-    // Add markers for Seoul attractions
-    addAttractionMarkers() {
-        if (!this.map) return;
-
-        const landmarks = this.getSeoulLandmarks();
-        
-        landmarks.forEach(landmark => {
-            const marker = new google.maps.Marker({
-                position: landmark.coordinates,
-                map: this.map,
-                title: landmark.name,
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
-                        </svg>
-                    `),
-                    scaledSize: new google.maps.Size(32, 32),
-                    anchor: new google.maps.Point(16, 32)
-                },
-                zIndex: 100
-            });
-
-            // Create info window with enhanced content
-            const distance = this.currentLocation ? 
-                this.calculateDistance(
-                    this.currentLocation.lat,
-                    this.currentLocation.lng,
-                    landmark.coordinates.lat,
-                    landmark.coordinates.lng
-                ).toFixed(1) : null;
-
-            const infoWindow = new google.maps.InfoWindow({
-                content: `
-                    <div style="max-width: 280px; padding: 5px;">
-                        <h3 style="margin: 0 0 8px 0; color: #333; font-size: 16px;">${landmark.name}</h3>
-                        <p style="margin: 0 0 8px 0; color: #666; font-size: 14px; font-style: italic;">${landmark.nameKorean}</p>
-                        <p style="margin: 0 0 12px 0; font-size: 14px; line-height: 1.4;">${landmark.description}</p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
-                            ${landmark.tags.map(tag => `<span style="background: #e3f2fd; color: #1976d2; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${tag}</span>`).join('')}
-                        </div>
-                        ${distance ? `<p style="margin: 0 0 12px 0; color: #666; font-size: 13px;"><i class="fas fa-route"></i> ${distance} km away</p>` : ''}
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="getDirectionsTo('${landmark.id}')" 
-                                    style="flex: 1; background: #1976d2; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                                <i class="fas fa-directions"></i> Directions
-                            </button>
-                            <button onclick="centerMapOn(${landmark.coordinates.lat}, ${landmark.coordinates.lng})" 
-                                    style="background: #666; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;">
-                                <i class="fas fa-crosshairs"></i>
-                            </button>
-                        </div>
-                    </div>
-                `
-            });
-
-            // Store marker and info window reference
-            this.attractionMarkers.push({
-                marker: marker,
-                infoWindow: infoWindow,
-                landmark: landmark
-            });
-
-            // Add click listener
-            marker.addListener('click', () => {
-                // Close all other info windows
-                this.attractionMarkers.forEach(markerInfo => {
-                    if (markerInfo.infoWindow !== infoWindow) {
-                        markerInfo.infoWindow.close();
-                    }
-                });
-                infoWindow.open(this.map, marker);
-            });
-        });
-
-        console.log(`✅ Added ${landmarks.length} attraction markers`);
-    }
-
     // Calculate distance between two coordinates
     calculateDistance(lat1, lng1, lat2, lng2) {
         const R = 6371; // Earth's radius in kilometers
@@ -438,7 +420,7 @@ class SeoulMapManager {
         return R * c;
     }
 
-    // Setup control button listeners
+    // Setup control event listeners
     setupControlListeners() {
         // Center on user location
         const centerUserBtn = document.getElementById('centerUserBtn');
@@ -447,8 +429,9 @@ class SeoulMapManager {
                 if (this.currentLocation && this.map) {
                     this.map.setCenter(this.currentLocation);
                     this.map.setZoom(15);
+                    console.log('📍 Centered map on user location');
                 } else {
-                    this.getCurrentLocation();
+                    console.warn('⚠️ User location not available');
                 }
             });
         }
@@ -457,7 +440,17 @@ class SeoulMapManager {
         const toggleTrafficBtn = document.getElementById('toggleTrafficBtn');
         if (toggleTrafficBtn) {
             toggleTrafficBtn.addEventListener('click', () => {
-                this.toggleTraffic();
+                if (this.trafficLayer && this.map) {
+                    if (this.isTrafficVisible) {
+                        this.trafficLayer.setMap(null);
+                        this.isTrafficVisible = false;
+                        console.log('🚫 Traffic layer hidden');
+                    } else {
+                        this.trafficLayer.setMap(this.map);
+                        this.isTrafficVisible = true;
+                        console.log('🚗 Traffic layer shown');
+                    }
+                }
             });
         }
 
@@ -470,29 +463,19 @@ class SeoulMapManager {
         }
     }
 
-    // Toggle traffic layer
-    toggleTraffic() {
-        if (!this.trafficLayer || !this.map) return;
+    // Get directions to a landmark
+    getDirections(landmarkId) {
+        const landmark = this.getSeoulLandmarks().find(l => l.id === landmarkId);
+        if (!landmark) return;
 
-        if (this.isTrafficVisible) {
-            this.trafficLayer.setMap(null);
-            this.isTrafficVisible = false;
-            console.log('🚗 Traffic layer hidden');
-        } else {
-            this.trafficLayer.setMap(this.map);
-            this.isTrafficVisible = true;
-            console.log('🚗 Traffic layer shown');
-        }
-
-        // Update button appearance
-        const toggleTrafficBtn = document.getElementById('toggleTrafficBtn');
-        if (toggleTrafficBtn) {
-            toggleTrafficBtn.style.background = this.isTrafficVisible ? '#EA4335' : 'white';
-            toggleTrafficBtn.style.color = this.isTrafficVisible ? 'white' : '#333';
-        }
+        const destination = `${landmark.coordinates.lat},${landmark.coordinates.lng}`;
+        const url = `https://maps.google.com/maps?daddr=${destination}&dirflg=w`;
+        
+        window.open(url, '_blank');
+        console.log(`🗺️ Opened directions to ${landmark.name}`);
     }
 
-    // Toggle fullscreen
+    // Toggle fullscreen mode
     toggleFullscreen() {
         const mapContainer = document.getElementById('mapContainer');
         if (!mapContainer) return;
@@ -502,74 +485,30 @@ class SeoulMapManager {
                 mapContainer.requestFullscreen();
             } else if (mapContainer.webkitRequestFullscreen) {
                 mapContainer.webkitRequestFullscreen();
-            } else if (mapContainer.mozRequestFullScreen) {
-                mapContainer.mozRequestFullScreen();
+            } else if (mapContainer.msRequestFullscreen) {
+                mapContainer.msRequestFullscreen();
             }
+            this.isFullscreen = true;
+            console.log('🖥️ Entered fullscreen mode');
         } else {
             if (document.exitFullscreen) {
                 document.exitFullscreen();
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
             }
-        }
-    }
-
-    showMapError(message) {
-        const mapContainer = document.getElementById('mapContainer');
-        if (mapContainer) {
-            mapContainer.innerHTML = `
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-width: 400px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ff6b6b; margin-bottom: 16px;"></i>
-                    <h3 style="color: #333; margin-bottom: 12px;">Map Error</h3>
-                    <p style="color: #666; margin-bottom: 16px;">${message}</p>
-                    <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-                        Reload Page
-                    </button>
-                </div>
-            `;
+            this.isFullscreen = false;
+            console.log('🖥️ Exited fullscreen mode');
         }
     }
 }
 
-// Global functions for info window buttons
-window.getDirectionsTo = function(locationId) {
-    const landmarks = window.seoulMapManager.getSeoulLandmarks();
-    const location = landmarks.find(l => l.id === locationId);
-    if (!location) return;
+// Create global instance
+window.seoulMapManager = new SeoulMapManager();
 
-    const destination = `${location.coordinates.lat},${location.coordinates.lng}`;
-    const url = `https://maps.google.com/maps?daddr=${destination}&dirflg=w`;
-    
-    window.open(url, '_blank');
+// Global callback for Google Maps API
+window.initializeGoogleMaps = function() {
+    console.log('✅ Google Maps API loaded and ready');
+    window.seoulMapManager.initializeMap();
 };
-
-window.centerMapOn = function(lat, lng) {
-    if (window.seoulMapManager && window.seoulMapManager.map) {
-        window.seoulMapManager.map.setCenter({ lat: lat, lng: lng });
-        window.seoulMapManager.map.setZoom(16);
-    }
-};
-
-// Handle fullscreen change events
-document.addEventListener('fullscreenchange', () => {
-    if (window.seoulMapManager) {
-        window.seoulMapManager.isFullscreen = !!document.fullscreenElement;
-        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
-        if (toggleFullscreenBtn) {
-            const icon = toggleFullscreenBtn.querySelector('i');
-            if (icon) {
-                icon.className = window.seoulMapManager.isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
-            }
-        }
-    }
-});
-
-// Initialize map manager
-let seoulMapManager;
-document.addEventListener('DOMContentLoaded', () => {
-    seoulMapManager = new SeoulMapManager();
-    // Make it globally accessible
-    window.seoulMapManager = seoulMapManager;
-});
