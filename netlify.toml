@@ -41,6 +41,12 @@
   to = "/src/pages/index.html"
   status = 200
 
+# Map page routing
+[[redirects]]
+  from = "/map"
+  to = "/src/pages/map.html"
+  status = 200
+
 # Handle 404s by redirecting to main app
 [[redirects]]
   from = "/*"

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seoul Map - Seoul Explorer</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
+    
+    <!-- Configuration -->
+    <script src="../config/config.js"></script>
+    <script src="../config/firebase.js"></script>
+    
+    <style>
+        .map-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0;
+            margin: 0;
+        }
+        
+        .map-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .map-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .back-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .back-button:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+        
+        .map-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .location-display {
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: calc(100vh - 80px);
+            position: relative;
+            background: #f0f0f0;
+        }
+        
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+            z-index: 100;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-button {
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #333;
+            transition: all 0.2s ease;
+        }
+        
+        .control-button:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 200px;
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .legend-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .user-marker {
+            background: #4285F4;
+            border: 2px solid white;
+        }
+        
+        .attraction-marker {
+            background: #EA4335;
+            border: 2px solid white;
+        }
+        
+        @media (max-width: 768px) {
+            .map-header-content {
+                padding: 0 10px;
+            }
+            
+            .map-title {
+                font-size: 1.1rem;
+            }
+            
+            .location-display {
+                font-size: 0.8rem;
+            }
+            
+            .map-legend {
+                left: 10px;
+                bottom: 10px;
+                min-width: 160px;
+                padding: 12px;
+            }
+            
+            .map-controls {
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="map-page">
+        <!-- Map Header -->
+        <header class="map-header">
+            <div class="map-header-content">
+                <button class="back-button" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                    Back
+                </button>
+                <div class="header-center">
+                    <h1 class="map-title">
+                        <i class="fas fa-map-marked-alt"></i>
+                        Seoul Map
+                    </h1>
+                </div>
+                <div class="location-display" id="currentLocationDisplay">
+                    <i class="fas fa-location-arrow"></i>
+                    <span id="currentLocationText">Getting location...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Map Container -->
+        <div class="map-container" id="mapContainer">
+            <div class="map-loading" id="mapLoading">
+                <div class="loading-spinner"></div>
+                <h3>Loading Seoul Map</h3>
+                <p>Preparing your personalized map experience...</p>
+            </div>
+        </div>
+
+        <!-- Map Controls -->
+        <div class="map-controls">
+            <button class="control-button" id="centerUserBtn" title="Center on your location">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+            <button class="control-button" id="toggleTrafficBtn" title="Toggle traffic layer">
+                <i class="fas fa-car"></i>
+            </button>
+            <button class="control-button" id="toggleFullscreenBtn" title="Toggle fullscreen">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+
+        <!-- Map Legend -->
+        <div class="map-legend">
+            <div class="legend-title">Map Legend</div>
+            <div class="legend-item">
+                <div class="legend-marker user-marker"></div>
+                <span>Your Location</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-marker attraction-marker"></div>
+                <span>Seoul Attractions</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: #999;">
+                Click markers for details
+            </div>
+        </div>
+    </div>
+
+    <!-- Map JavaScript -->
+    <script src="../components/map-manager.js"></script>
+    
+    <script>
+        // Navigation functions
+        function goBack() {
+            // Check if we came from the main app
+            if (document.referrer && document.referrer.includes('index.html')) {
+                window.history.back();
+            } else {
+                // Fallback to main page
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Global error handler for Google Maps
+        window.gm_authFailure = function() {
+            console.error('Google Maps authentication failed');
+            showMapError('Google Maps authentication failed. Please check your API key.');
+        };
+        
+        function showMapError(message) {
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-width: 400px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ff6b6b; margin-bottom: 16px;"></i>
+                        <h3 style="color: #333; margin-bottom: 12px;">Map Loading Error</h3>
+                        <p style="color: #666; margin-bottom: 16px;">${message}</p>
+                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Google Maps initialization callback
+        window.initializeGoogleMaps = function() {
+            console.log('✅ Google Maps API loaded and ready for map page');
+            if (window.seoulMapManager && typeof window.seoulMapManager.initializeMap === 'function') {
+                window.seoulMapManager.initializeMap();
+            }
+        };
+
+        function loadGoogleMapsAPI() {
+            // Environment detection and logging
+            console.log('🗺️ Loading Google Maps API for map page...');
+            console.log('📍 Environment:', window.BUILD_INFO?.environment || 'unknown');
+            console.log('📁 Config source:', window.BUILD_INFO?.source || 'unknown');
+            
+            // Validate API key first
+            if (!CONFIG.GOOGLE_MAPS_API_KEY || 
+                CONFIG.GOOGLE_MAPS_API_KEY.includes('NOT_SET') || 
+                CONFIG.GOOGLE_MAPS_API_KEY.includes('YOUR_API_KEY') ||
+                CONFIG.GOOGLE_MAPS_API_KEY.length < 20) {
+                console.error('❌ Invalid Google Maps API key:', {
+                    exists: !!CONFIG.GOOGLE_MAPS_API_KEY,
+                    length: CONFIG.GOOGLE_MAPS_API_KEY?.length,
+                    startsWithAIza: CONFIG.GOOGLE_MAPS_API_KEY?.startsWith('AIza'),
+                    environment: window.BUILD_INFO?.environment
+                });
+                showMapError('Google Maps API key is not configured properly.');
+                return;
+            }
+            
+            console.log('✅ API key validation passed');
+            console.log('🔑 API key preview:', CONFIG.GOOGLE_MAPS_API_KEY.substring(0, 10) + '...');
+            
+            // Check if already loaded
+            if (window.google && window.google.maps) {
+                console.log('♻️ Google Maps API already loaded');
+                if (typeof window.initializeGoogleMaps === 'function') {
+                    window.initializeGoogleMaps();
+                }
+                return;
+            }
+            
+            const script = document.createElement('script');
+            const apiUrl = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initializeGoogleMaps&loading=async&language=en&region=US&v=weekly`;
+            script.src = apiUrl;
+            script.async = true;
+            script.defer = true;
+            
+            console.log('📡 Loading Google Maps API from:', apiUrl.substring(0, 80) + '...');
+            
+            script.onerror = function(error) {
+                console.error("❌ Google Maps API loading failed:", error);
+                console.error("🔍 Possible causes:");
+                console.error("  - Network connection issue");
+                console.error("  - Invalid API key");
+                console.error("  - Domain restrictions in Google Cloud Console");
+                console.error("  - API not enabled in Google Cloud Console");
+                showMapError('Failed to load Google Maps. Check console for details.');
+            };
+            
+            script.onload = function() {
+                console.log('✅ Google Maps script loaded successfully');
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (typeof validateConfig === 'function') {
+                    if (validateConfig()) {
+                        console.log('✅ Configuration validation passed');
+                        loadGoogleMapsAPI();
+                    } else {
+                        console.warn('⚠️ Configuration validation failed - attempting to load Google Maps anyway');
+                        loadGoogleMapsAPI(); // Try to load anyway with available config
+                    }
+                } else {
+                    console.warn('⚠️ validateConfig function not found - loading Google Maps');
+                    loadGoogleMapsAPI();
+                }
+            });
+        } else {
+            if (typeof validateConfig === 'function') {
+                if (validateConfig()) {
+                    console.log('✅ Configuration validation passed');
+                    loadGoogleMapsAPI();
+                } else {
+                    console.warn('⚠️ Configuration validation failed - attempting to load Google Maps anyway');
+                    loadGoogleMapsAPI(); // Try to load anyway with available config
+                }
+            } else {
+                console.warn('⚠️ validateConfig function not found - loading Google Maps');
+                loadGoogleMapsAPI();
+            }
+        }
+    </script>
+</body>
+</html>
