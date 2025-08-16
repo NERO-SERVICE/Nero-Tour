@@ -73,3 +73,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# firebase 비공개 키
+serviceAccountKey.json

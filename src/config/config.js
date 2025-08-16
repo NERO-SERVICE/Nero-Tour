@@ -8,13 +8,13 @@ const CONFIG = {
     
     // Firebase Configuration - Injected from environment
     FIREBASE_CONFIG: {
-        apiKey: "AIzaSyC8K_example_firebase_key_12345",
-        authDomain: "nero-tour-seoul.firebaseapp.com",
-        projectId: "nero-tour-seoul",
-        storageBucket: "nero-tour-seoul.appspot.com",
-        messagingSenderId: "123456789012",
-        appId: "1:123456789012:web:abcdef123456789",
-        measurementId: "G-EXAMPLE123"
+        apiKey: "AIzaSyA8X9WKSFAZOHfe5HQpJMBbfRM608SVCtU",
+        authDomain: "nero-tour-3fcd9.firebaseapp.com",
+        projectId: "nero-tour-3fcd9",
+        storageBucket: "nero-tour-3fcd9.firebasestorage.app",
+        messagingSenderId: "366080914476",
+        appId: "1:366080914476:web:0baa754cbd1aa6ac8d4d89",
+        measurementId: "G-NH6KYDQWMR"
     },
     
     // Map default settings
@@ -76,7 +76,7 @@ window.validateConfig = validateConfig;
 
 // Build info
 window.BUILD_INFO = {
-    timestamp: "2025-08-16T05:07:01.226Z",
+    timestamp: "2025-08-16T08:29:41.681Z",
     environment: "local",
     version: "1.0.0",
     source: ".env file"

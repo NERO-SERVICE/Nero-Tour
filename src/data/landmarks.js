@@ -16,7 +16,7 @@ export const landmarks = [
         longDescription: 'Located on Naksan Mountain (125m), this park offers stunning panoramic views of Seoul. Walk along the 2.1km ancient fortress wall section from Hyehwamun to Heunginjimun, connecting to the famous Ihwa Mural Village.',
         coordinates: { lat: 37.5806, lng: 127.0075 },
         icon: 'fas fa-mountain',
-        image: 'landmarks/낙산공원.png',
+        image: 'landmarks/seoul_naksanpark_kdh.png',
         tags: ['Historical', 'Views', 'Walking'],
         tips: [
             'Best views of Seoul skyline especially at sunset',

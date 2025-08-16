@@ -27,6 +27,7 @@ let FirebaseDB = null;
 let FirebaseAuth = null;
 let FirebaseAnalytics = null;
 let FirebaseFunctions = null;
+let FirebaseStorage = null;
 
 function initializeFirebase() {
     try {
@@ -34,41 +35,67 @@ function initializeFirebase() {
         
         // Check if Firebase config is valid
         if (!isFirebaseConfigValid(firebaseConfig)) {
-            console.log('ℹ️ Firebase configuration not available or invalid - Firebase features will be disabled');
+            console.error('❌ Firebase configuration not available or invalid');
+            console.error('Config:', firebaseConfig);
             return false;
         }
         
         // Check if Firebase SDK is loaded from CDN
         if (typeof firebase === 'undefined') {
-            console.warn('Firebase SDK not loaded. Firebase features will be disabled.');
+            console.error('❌ Firebase SDK not loaded from CDN');
             return false;
         }
 
+        console.log('🔥 Initializing Firebase with config:', {
+            projectId: firebaseConfig.projectId,
+            authDomain: firebaseConfig.authDomain,
+            storageBucket: firebaseConfig.storageBucket
+        });
+
         // Initialize Firebase App
         FirebaseApp = firebase.initializeApp(firebaseConfig);
+        console.log('✅ Firebase App initialized');
         
-        // Initialize services
+        // Initialize Firestore
         if (firebase.firestore) {
             FirebaseDB = firebase.firestore();
+            console.log('✅ Firestore initialized');
+        } else {
+            console.error('❌ Firestore not available');
         }
         
+        // Initialize Storage
+        if (firebase.storage) {
+            FirebaseStorage = firebase.storage();
+            console.log('✅ Firebase Storage initialized');
+        } else {
+            console.error('❌ Firebase Storage not available');
+        }
+        
+        // Initialize Auth
         if (firebase.auth) {
             FirebaseAuth = firebase.auth();
+            console.log('✅ Firebase Auth initialized');
         }
         
+        // Initialize Analytics
         if (firebase.analytics && firebaseConfig.measurementId) {
             FirebaseAnalytics = firebase.analytics();
+            console.log('✅ Firebase Analytics initialized');
         }
         
+        // Initialize Functions
         if (firebase.functions) {
             FirebaseFunctions = firebase.functions();
+            console.log('✅ Firebase Functions initialized');
         }
         
-        console.log('✅ Firebase initialized successfully');
+        console.log('🎉 All Firebase services initialized successfully!');
         return true;
         
     } catch (error) {
-        console.warn('⚠️ Firebase initialization failed (continuing without Firebase):', error);
+        console.error('❌ Firebase initialization failed:', error);
+        console.error('Error details:', error.message);
         return false;
     }
 }
@@ -87,5 +114,15 @@ window.Firebase = {
     auth: FirebaseAuth,
     analytics: FirebaseAnalytics,
     functions: FirebaseFunctions,
-    initialize: initializeFirebase
+    storage: FirebaseStorage,
+    initialize: initializeFirebase,
+    isInitialized: () => !!FirebaseApp,
+    getStatus: () => ({
+        app: !!FirebaseApp,
+        db: !!FirebaseDB,
+        auth: !!FirebaseAuth,
+        storage: !!FirebaseStorage,
+        analytics: !!FirebaseAnalytics,
+        functions: !!FirebaseFunctions
+    })
 };

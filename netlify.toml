@@ -57,20 +57,20 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000"
 
-# Redirect root to main app
-[[redirects]]
-  from = "/"
-  to = "/src/pages/index.html"
-  status = 200
-
 # Map page routing
 [[redirects]]
   from = "/map"
   to = "/src/pages/map.html"
   status = 200
 
+# Detail page routing  
+[[redirects]]
+  from = "/detail"
+  to = "/src/pages/detail.html"
+  status = 200
+
 # Handle 404s by redirecting to main app
 [[redirects]]
   from = "/*"
-  to = "/src/pages/index.html"
+  to = "/index.html"
   status = 404

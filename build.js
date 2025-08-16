@@ -1,48 +1,56 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-console.log('🚀 Starting build process...');
+// ES module __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Detect environment and load variables accordingly
-const isNetlify = process.env.NETLIFY === 'true';
-const envFilePath = path.join(__dirname, '.env');
-const hasEnvFile = fs.existsSync(envFilePath);
+async function main() {
+    console.log('🚀 Starting build process...');
 
-if (isNetlify) {
-    console.log('☁️ Netlify environment detected - using environment variables');
-} else if (hasEnvFile) {
-    console.log('📁 Local environment detected - loading from .env file');
-    require('dotenv').config();
-} else {
-    console.error('❌ No environment configuration found!');
-    console.error('   - For local development: create .env file with your API keys');
-    console.error('   - For Netlify: set environment variables in dashboard');
-    process.exit(1);
-}
+    // Detect environment and load variables accordingly
+    const isNetlify = process.env.NETLIFY === 'true';
+    const envFilePath = path.join(__dirname, '.env');
+    const hasEnvFile = fs.existsSync(envFilePath);
 
-// Read environment variables (no fallback values)
-const envVars = {
-    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-    FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
-    FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
-    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-    FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET,
-    FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
-    FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID
-};
+    if (isNetlify) {
+        console.log('☁️ Netlify environment detected - using environment variables');
+    } else if (hasEnvFile) {
+        console.log('📁 Local environment detected - loading from .env file');
+        // Use dynamic import for dotenv in ES modules
+        const dotenv = await import('dotenv');
+        dotenv.config();
+    } else {
+        console.error('❌ No environment configuration found!');
+        console.error('   - For local development: create .env file with your API keys');
+        console.error('   - For Netlify: set environment variables in dashboard');
+        process.exit(1);
+    }
 
-console.log('📝 Environment variables loaded:');
-Object.keys(envVars).forEach(key => {
-    const value = envVars[key];
-    const maskedValue = value && value.length > 10 ? value.substring(0, 10) + '...' : (value || 'NOT_SET');
-    console.log(`   ${key}: ${maskedValue}`);
-});
+    // Read environment variables (no fallback values)
+    const envVars = {
+        GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+        FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
+        FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
+        FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+        FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET,
+        FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
+        FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID
+    };
 
-// Create the config file content
-const configContent = `// Seoul Explorer - Configuration File
+    console.log('📝 Environment variables loaded:');
+    Object.keys(envVars).forEach(key => {
+        const value = envVars[key];
+        const maskedValue = value && value.length > 10 ? value.substring(0, 10) + '...' : (value || 'NOT_SET');
+        console.log(`   ${key}: ${maskedValue}`);
+    });
+
+    // Create the config file content
+    const configContent = `// Seoul Explorer - Configuration File
 // 🚀 Auto-generated during build - DO NOT EDIT MANUALLY
 // Environment variables injected by Netlify build process
 
@@ -127,42 +135,49 @@ window.BUILD_INFO = {
 };
 `;
 
-// Write the config file
-const configPath = path.join(__dirname, 'src', 'config', 'config.js');
-fs.writeFileSync(configPath, configContent);
+    // Write the config file
+    const configPath = path.join(__dirname, 'src', 'config', 'config.js');
+    fs.writeFileSync(configPath, configContent);
 
-console.log('✅ Config file generated:', configPath);
+    console.log('✅ Config file generated:', configPath);
 
-// Validate that required environment variables are set
-const missingVars = [];
-const requiredVars = ['GOOGLE_MAPS_API_KEY'];
-const optionalVars = ['FIREBASE_API_KEY', 'FIREBASE_AUTH_DOMAIN', 'FIREBASE_PROJECT_ID', 'FIREBASE_STORAGE_BUCKET', 'FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_APP_ID', 'FIREBASE_MEASUREMENT_ID'];
+    // Validate that required environment variables are set
+    const missingVars = [];
+    const requiredVars = ['GOOGLE_MAPS_API_KEY'];
+    const optionalVars = ['FIREBASE_API_KEY', 'FIREBASE_AUTH_DOMAIN', 'FIREBASE_PROJECT_ID', 'FIREBASE_STORAGE_BUCKET', 'FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_APP_ID', 'FIREBASE_MEASUREMENT_ID'];
 
-// Check required variables
-requiredVars.forEach(key => {
-    if (!envVars[key] || envVars[key].trim() === '') {
-        missingVars.push(key);
+    // Check required variables
+    requiredVars.forEach(key => {
+        if (!envVars[key] || envVars[key].trim() === '') {
+            missingVars.push(key);
+        }
+    });
+
+    // Check optional variables (just warn)
+    const missingOptionalVars = [];
+    optionalVars.forEach(key => {
+        if (!envVars[key] || envVars[key].trim() === '') {
+            missingOptionalVars.push(key);
+        }
+    });
+
+    if (missingVars.length > 0) {
+        console.error('❌ Missing required environment variables:');
+        missingVars.forEach(key => console.error(`   - ${key}`));
+        console.error('   Please check your environment configuration');
+        process.exit(1);
     }
-});
 
-// Check optional variables (just warn)
-const missingOptionalVars = [];
-optionalVars.forEach(key => {
-    if (!envVars[key] || envVars[key].trim() === '') {
-        missingOptionalVars.push(key);
+    if (missingOptionalVars.length > 0) {
+        console.warn('⚠️  Optional Firebase variables not set (Firebase features will be disabled):');
+        missingOptionalVars.forEach(key => console.warn(`   - ${key}`));
     }
-});
 
-if (missingVars.length > 0) {
-    console.error('❌ Missing required environment variables:');
-    missingVars.forEach(key => console.error(`   - ${key}`));
-    console.error('   Please check your environment configuration');
+    console.log('🎉 Build completed successfully!');
+}
+
+// Run the main function
+main().catch(error => {
+    console.error('❌ Build failed:', error);
     process.exit(1);
-}
-
-if (missingOptionalVars.length > 0) {
-    console.warn('⚠️  Optional Firebase variables not set (Firebase features will be disabled):');
-    missingOptionalVars.forEach(key => console.warn(`   - ${key}`));
-}
-
-console.log('🎉 Build completed successfully!');
+});

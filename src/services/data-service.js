@@ -2,8 +2,8 @@
  * Data Service
  * 데이터 로딩 및 관리 서비스
  * 
- * 현재는 더미 데이터를 사용하지만, 향후 백엔드 API 연동 시
- * 이 서비스의 인터페이스를 유지하면서 내부 구현만 변경하면 됩니다.
+ * Firebase Firestore와 연동하여 데이터를 관리합니다.
+ * 오프라인 모드에서는 로컬 더미 데이터를 사용합니다.
  */
 
 import { 
@@ -24,17 +24,51 @@ class DataService {
         this.cacheTTL = 5 * 60 * 1000; // 5분 캐시
         this.isOnline = navigator.onLine;
         this.apiBaseUrl = null; // 향후 API URL 설정
+        this.db = null; // Firebase Firestore 인스턴스
+        this.isFirebaseReady = false;
+        
+        // Firebase 초기화 대기
+        this.initFirebase();
         
         // 온라인/오프라인 상태 감지
         window.addEventListener('online', () => {
             this.isOnline = true;
-            console.log('📶 Online mode: API calls available');
+            console.log('📶 Online mode: Firebase/API calls available');
         });
         
         window.addEventListener('offline', () => {
             this.isOnline = false;
             console.log('📵 Offline mode: Using cached data');
         });
+    }
+
+    /**
+     * Firebase 초기화 대기
+     */
+    async initFirebase() {
+        let attempts = 0;
+        const maxAttempts = 50; // 5초 대기
+
+        while (attempts < maxAttempts) {
+            if (window.Firebase && window.Firebase.db && window.Firebase.isInitialized()) {
+                this.db = window.Firebase.db;
+                this.isFirebaseReady = true;
+                console.log('✅ Firebase connected to DataService');
+                
+                // Firebase 상태 확인
+                const status = window.Firebase.getStatus();
+                console.log('🔥 Firebase services status:', status);
+                
+                return true;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        console.warn('⚠️ Firebase not available - using local data only');
+        console.warn('🔍 Firebase status:', window.Firebase?.getStatus() || 'Not available');
+        return false;
     }
 
     /**
@@ -50,12 +84,32 @@ class DataService {
                 return cached;
             }
 
-            // 향후 API 호출 로직
+            // Firebase에서 가져오기
+            if (this.isOnline && this.isFirebaseReady) {
+                try {
+                    console.log('🔥 Loading landmarks from Firebase');
+                    const querySnapshot = await this.db.collection('landmarks').get();
+                    const data = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                        image: this.resolveImagePath(doc.data().image)
+                    }));
+                    
+                    // 캐시에 저장
+                    this.setCachedData('landmarks:all', data);
+                    console.log(`✅ Loaded ${data.length} landmarks from Firebase`);
+                    return data;
+                } catch (firebaseError) {
+                    console.warn('⚠️ Firebase error, falling back to local data:', firebaseError);
+                }
+            }
+
+            // API 호출 (향후 확장용)
             if (this.isOnline && this.apiBaseUrl) {
                 return await this.fetchFromApi('/landmarks');
             }
 
-            // 현재는 더미 데이터 사용
+            // 로컬 더미 데이터 사용
             console.log('🏗️ Loading landmarks from local data');
             const data = landmarks.map(landmark => ({
                 ...landmark,
@@ -69,7 +123,10 @@ class DataService {
         } catch (error) {
             console.error('❌ Error loading landmarks:', error);
             // 에러 시 더미 데이터 fallback
-            return landmarks;
+            return landmarks.map(landmark => ({
+                ...landmark,
+                image: this.resolveImagePath(landmark.image)
+            }));
         }
     }
 
@@ -119,12 +176,37 @@ class DataService {
                 return cached;
             }
 
-            // 향후 API 호출
+            // Firebase에서 가져오기
+            if (this.isOnline && this.isFirebaseReady) {
+                try {
+                    console.log(`🔥 Loading landmark ${landmarkId} from Firebase`);
+                    const doc = await this.db.collection('landmarks').doc(landmarkId).get();
+                    if (doc.exists) {
+                        const data = {
+                            id: doc.id,
+                            ...doc.data(),
+                            image: this.resolveImagePath(doc.data().image),
+                            detailSections: doc.data().detailSections?.map(section => ({
+                                ...section,
+                                image: this.resolveImagePath(section.image)
+                            }))
+                        };
+
+                        this.setCachedData(cacheKey, data);
+                        console.log(`✅ Loaded landmark ${landmarkId} from Firebase`);
+                        return data;
+                    }
+                } catch (firebaseError) {
+                    console.warn(`⚠️ Firebase error for landmark ${landmarkId}, falling back to local data:`, firebaseError);
+                }
+            }
+
+            // API 호출 (향후 확장용)
             if (this.isOnline && this.apiBaseUrl) {
                 return await this.fetchFromApi(`/landmarks/${landmarkId}`);
             }
 
-            // 더미 데이터에서 검색
+            // 로컬 더미 데이터에서 검색
             const landmark = getLandmarkById(landmarkId);
             if (landmark) {
                 const data = {
@@ -144,7 +226,18 @@ class DataService {
 
         } catch (error) {
             console.error(`❌ Error loading landmark ${landmarkId}:`, error);
-            return getLandmarkById(landmarkId);
+            const fallbackLandmark = getLandmarkById(landmarkId);
+            if (fallbackLandmark) {
+                return {
+                    ...fallbackLandmark,
+                    image: this.resolveImagePath(fallbackLandmark.image),
+                    detailSections: fallbackLandmark.detailSections?.map(section => ({
+                        ...section,
+                        image: this.resolveImagePath(section.image)
+                    }))
+                };
+            }
+            return null;
         }
     }
 
@@ -199,12 +292,30 @@ class DataService {
                 return cached;
             }
 
-            // 향후 API 호출
+            // Firebase에서 가져오기
+            if (this.isOnline && this.isFirebaseReady) {
+                try {
+                    console.log('🔥 Loading categories from Firebase');
+                    const querySnapshot = await this.db.collection('categories').get();
+                    const data = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    this.setCachedData('categories:all', data);
+                    console.log(`✅ Loaded ${data.length} categories from Firebase`);
+                    return data;
+                } catch (firebaseError) {
+                    console.warn('⚠️ Firebase error for categories, falling back to local data:', firebaseError);
+                }
+            }
+
+            // API 호출 (향후 확장용)
             if (this.isOnline && this.apiBaseUrl) {
                 return await this.fetchFromApi('/categories');
             }
 
-            // 더미 데이터 사용
+            // 로컬 더미 데이터 사용
             const data = getAllCategories();
             this.setCachedData('categories:all', data);
             return data;
@@ -228,12 +339,32 @@ class DataService {
                 return cached;
             }
 
-            // 향후 API 호출
+            // Firebase에서 가져오기
+            if (this.isOnline && this.isFirebaseReady) {
+                try {
+                    console.log(`🔥 Loading category ${categoryId} from Firebase`);
+                    const doc = await this.db.collection('categories').doc(categoryId).get();
+                    if (doc.exists) {
+                        const data = {
+                            id: doc.id,
+                            ...doc.data()
+                        };
+                        
+                        this.setCachedData(cacheKey, data);
+                        console.log(`✅ Loaded category ${categoryId} from Firebase`);
+                        return data;
+                    }
+                } catch (firebaseError) {
+                    console.warn(`⚠️ Firebase error for category ${categoryId}, falling back to local data:`, firebaseError);
+                }
+            }
+
+            // API 호출 (향후 확장용)
             if (this.isOnline && this.apiBaseUrl) {
                 return await this.fetchFromApi(`/categories/${categoryId}`);
             }
 
-            // 더미 데이터에서 검색
+            // 로컬 더미 데이터에서 검색
             const data = getCategoryById(categoryId);
             if (data) {
                 this.setCachedData(cacheKey, data);
@@ -247,9 +378,9 @@ class DataService {
     }
 
     /**
-     * 이미지 경로를 절대 경로로 변환합니다
+     * 이미지 경로를 Firebase Storage URL로 변환합니다
      * @param {string} imagePath - 상대 이미지 경로
-     * @returns {string} 절대 이미지 경로
+     * @returns {string} Firebase Storage URL 또는 절대 이미지 경로
      */
     resolveImagePath(imagePath) {
         if (!imagePath) return null;
@@ -259,7 +390,20 @@ class DataService {
             return imagePath;
         }
 
-        // 상대 경로를 절대 경로로 변환
+        // Firebase Storage URL 생성 (최우선)
+        if (window.CONFIG?.FIREBASE_CONFIG?.storageBucket) {
+            const storageBucket = window.CONFIG.FIREBASE_CONFIG.storageBucket;
+            const cleanImageName = imagePath.startsWith('landmarks/') ? 
+                imagePath.substring(10) : imagePath;
+            const encodedPath = encodeURIComponent(`landmarks/${cleanImageName}`);
+            const firebaseUrl = `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedPath}?alt=media`;
+            
+            console.log(`🔗 Resolved image path: ${imagePath} -> Firebase Storage`);
+            return firebaseUrl;
+        }
+
+        // 로컬 fallback (개발 모드)
+        console.warn(`⚠️ Using local fallback for image path: ${imagePath}`);
         return `/src/assets/images/${imagePath}`;
     }
 
@@ -351,9 +495,11 @@ class DataService {
     getServiceStatus() {
         return {
             isOnline: this.isOnline,
+            isFirebaseReady: this.isFirebaseReady,
             hasApiUrl: !!this.apiBaseUrl,
             cacheSize: this.cache.size,
-            mode: this.apiBaseUrl && this.isOnline ? 'api' : 'local'
+            mode: this.isFirebaseReady && this.isOnline ? 'firebase' : 
+                  this.apiBaseUrl && this.isOnline ? 'api' : 'local'
         };
     }
 }

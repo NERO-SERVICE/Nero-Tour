@@ -1,106 +1,195 @@
-# 🗺️ Seoul Explorer
+# 🔥 Seoul Explorer - Firebase Edition
 
-A mobile-friendly web application for exploring Seoul's landmarks and attractions with integrated Google Maps functionality.
+A modern, mobile-first web application for exploring Seoul's attractions with Firebase backend integration and interactive Google Maps.
 
-## 🚀 Setup Guide
+## 🌟 Features
 
-### 1. Environment Configuration
+- **🔥 Firebase Backend**: Real-time data from Firestore and images from Firebase Storage
+- **🗺️ Interactive Maps**: Google Maps integration with custom markers
+- **📍 Location Tracking**: Real-time GPS with detailed address display
+- **🏛️ Seoul Landmarks**: Curated attractions stored in Firebase
+- **📱 Mobile-First**: Optimized for mobile devices (414px design)
+- **💾 Smart Caching**: Intelligent offline support with Firebase fallback
 
-Create a `.env` file in the project root with your API keys:
+## 🚀 Quick Start
 
-```env
-# Google Maps API Key - Required
-GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
+### Prerequisites
+- Node.js and npm
+- Google Maps API key
+- Firebase project
 
-# Firebase Configuration - Optional
-FIREBASE_API_KEY=your_firebase_api_key
-FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-FIREBASE_MESSAGING_SENDER_ID=123456789012
-FIREBASE_APP_ID=1:123456789012:web:your-app-id
-FIREBASE_MEASUREMENT_ID=G-YOUR-MEASUREMENT-ID
+### Installation
+
+1. **Clone and install:**
+```bash
+git clone <your-repo>
+cd Nero-Tour
+npm install
 ```
 
-### 2. Google Cloud Console Setup
+2. **Configure API keys** in `src/config/config.js`:
+```javascript
+const CONFIG = {
+    GOOGLE_MAPS_API_KEY: "your-google-maps-key",
+    FIREBASE_CONFIG: {
+        apiKey: "your-firebase-key",
+        authDomain: "your-project.firebaseapp.com",
+        projectId: "your-project-id",
+        storageBucket: "your-project.firebasestorage.app",
+        // ...
+    }
+};
+```
 
-1. **Google Cloud Console** 접속: https://console.cloud.google.com
-2. **새 프로젝트 생성** 또는 기존 프로젝트 선택
-3. **API 및 서비스** → **라이브러리**에서 다음 API들을 활성화:
-   - Maps JavaScript API
-   - Places API  
-   - Directions API
-   - Geocoding API
-   - Geolocation API
-
-4. **사용자 인증 정보** → **사용자 인증 정보 만들기** → **API 키** 생성
-
-5. **API 키 제한** 설정 (보안):
-   - 애플리케이션 제한사항: HTTP 리퍼러 (your-domain.com/*)
-   - API 제한사항: 위 5개 API만 선택
-
-### 3. Local Development
-
+3. **Run development server:**
 ```bash
-# Install dependencies
-npm install
-
-# Run development server
 npm run dev
 ```
 
-This will:
-- Build the config from your `.env` file
-- Start a local server at http://localhost:8000
+Visit `http://localhost:8002` (automatically redirects to main app)
 
-### 4. Netlify Deployment
-
-1. Set environment variables in Netlify Dashboard → Environment variables:
-   - `GOOGLE_MAPS_API_KEY` = your actual API key
-   - (Optional) Firebase variables if using Firebase features
-
-2. The build will automatically use `build-netlify.js` for Netlify deployment
-
-### 5. Important Security Notes
-
-- ✅ `.env` file is ignored by git for security
-- ✅ No API keys are hardcoded in the source code
-- ✅ API keys are loaded from environment variables only
-- ⚠️ Make sure to set domain restrictions in Google Cloud Console
-
-## 📁 File Structure
+## 🏗️ Clean Architecture
 
 ```
-nero_tour/
-├── .env                    # 🔑 Local environment variables (not in git)
-├── build.js               # Local build script
-├── build-netlify.js       # Netlify build script
-├── package.json           # Dependencies and scripts
-├── netlify.toml           # Netlify deployment configuration
+Nero-Tour/
+├── index.html               # Root entry point (redirects to main app)
 ├── src/
-│   ├── pages/
-│   │   ├── index.html     # Main page
-│   │   └── detail.html    # Detail page
-│   ├── config/
-│   │   ├── config.js      # Generated config (not in git)
-│   │   └── config.template.js
-│   ├── components/        # JavaScript components
-│   ├── services/          # Map and API services
-│   ├── styles/           # CSS files
-│   └── utils/            # Utility functions
-└── public/             # Static assets
+│   ├── components/          # UI Components
+│   │   ├── explorer.js      # Main app logic
+│   │   ├── map-manager.js   # Google Maps
+│   │   └── detail-page.js   # Detail views
+│   ├── config/              # Configuration
+│   │   ├── config.js        # API keys & settings
+│   │   └── firebase.js      # Firebase initialization
+│   ├── data/                # Local data (fallback)
+│   │   ├── landmarks.js     # Seoul landmarks
+│   │   └── categories.js    # Location categories
+│   ├── services/            # Business Logic
+│   │   ├── data-service.js  # Firebase data management
+│   │   ├── image-service.js # Firebase Storage images
+│   │   └── maps-manager.js  # Maps coordination
+│   ├── pages/               # HTML Pages
+│   │   ├── index.html       # Main application page
+│   │   ├── map.html         # Full-screen map
+│   │   └── detail.html      # Landmark details
+│   ├── styles/              # Stylesheets
+│   └── assets/              # Static assets
+├── build.js                 # Build configuration
+├── package.json             # Dependencies
+└── netlify.toml            # Deployment config
 ```
 
-## ✨ Features
+## 🔥 Firebase Integration
 
-- **Interactive Maps**: Google Maps integration with custom markers
-- **Location Services**: Current location detection and distance calculation  
-- **Seoul Landmarks**: Curated tourist attractions and landmarks
-- **Responsive Design**: Mobile-first responsive interface
-- **Secure Configuration**: Environment-based API key management
+### Data Architecture
+- **Firestore Collections:**
+  - `categories` - Location categories
+  - `landmarks` - Seoul attraction data
+- **Firebase Storage:**
+  - `landmarks/` - Attraction images
+- **Smart Fallback:**
+  1. Firebase Firestore (primary)
+  2. Cached data (5-minute TTL)
+  3. Local data files (offline)
 
-## 🔧 Troubleshooting
+### Automatic Setup
+Firebase data and images are automatically populated when the app loads. The system:
+- ✅ Creates sample landmark images
+- ✅ Uploads data to Firestore
+- ✅ Configures Storage URLs
+- ✅ Tests complete integration
 
-- **Maps not loading**: Check your `.env` file has valid `GOOGLE_MAPS_API_KEY`
-- **403 errors**: Verify domain restrictions in Google Cloud Console
-- **Build fails**: Ensure `.env` file exists and contains required variables
+## 🔧 Configuration
+
+### Firebase Setup
+1. **Create Firebase project**
+2. **Enable services:**
+   - Firestore Database
+   - Firebase Storage
+3. **Set security rules** (development):
+
+```javascript
+// Firestore Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;  // Dev mode
+    }
+  }
+}
+
+// Storage Rules  
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;  // Dev mode
+    }
+  }
+}
+```
+
+### Google Maps Setup
+Enable these APIs in Google Cloud Console:
+- Maps JavaScript API
+- Places API
+- Directions API
+
+## 📱 Mobile-First Design
+
+Optimized for mobile with:
+- **414px max-width** (iPhone Pro Max)
+- **Touch-friendly UI** with swipe gestures
+- **Firebase-powered** fast loading
+- **Offline capabilities** with smart caching
+
+## 🌐 Deployment
+
+### Netlify (Recommended)
+1. Connect repository to Netlify
+2. Build command: `npm run build`
+3. Publish directory: `/`
+4. Add environment variables for API keys
+
+### Firebase Hosting
+```bash
+firebase init hosting
+firebase deploy
+```
+
+## 🎯 Key Benefits
+
+### ⚡ Performance
+- **Firebase CDN**: Global image delivery
+- **Smart Caching**: 5-minute TTL with offline support
+- **Mobile Optimized**: Fast loading on slow networks
+
+### 🔄 Reliability
+- **Automatic Fallback**: Firebase → Cache → Local data
+- **Error Handling**: Graceful degradation
+- **Offline Support**: Cached data when offline
+
+### 🔒 Security
+- **Firebase Security Rules**: Configurable access control
+- **API Key Management**: Environment-based configuration
+- **Domain Restrictions**: Google Cloud Console setup
+
+## 🚀 Production Ready
+
+✅ **Clean codebase** - No test files or development utilities  
+✅ **Firebase integration** - Real-time backend with image storage  
+✅ **Mobile optimization** - Fast, responsive, touch-friendly  
+✅ **Offline support** - Smart caching with fallback strategies  
+✅ **Security** - Proper API key management and Firebase rules  
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/name`
+3. Test Firebase integration thoroughly
+4. Submit Pull Request
+
+## 📄 License
+
+MIT License - see LICENSE file for details.

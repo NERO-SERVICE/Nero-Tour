@@ -876,7 +876,7 @@ class SeoulExplorer {
         
         // Method 1: Direct navigation
         try {
-            window.location.href = 'map.html';
+            window.location.href = 'src/pages/map.html';
             return;
         } catch (error) {
             console.warn('⚠️ Direct navigation failed:', error);

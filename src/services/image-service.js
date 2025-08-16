@@ -1,9 +1,8 @@
 /**
  * Image Service
- * 이미지 경로 관리 서비스
+ * Firebase Storage 연동 이미지 관리 서비스
  * 
- * 이미지 파일의 경로를 통합 관리하고, 향후 CDN 연동이나
- * 이미지 최적화 등의 기능을 쉽게 추가할 수 있도록 설계되었습니다.
+ * Firebase Storage를 우선으로 사용하고, 로컬 이미지를 fallback으로 사용합니다.
  */
 
 class ImageService {
@@ -11,8 +10,44 @@ class ImageService {
         this.baseImagePath = '/src/assets/images';
         this.cdnBaseUrl = null; // 향후 CDN URL 설정
         this.fallbackImage = '/src/assets/images/ui/placeholder.png';
-        this.imageCache = new Map();
-        this.preloadedImages = new Set();
+        this.storage = null; // Firebase Storage 인스턴스
+        this.isFirebaseReady = false;
+        this.storageBaseUrl = null; // Firebase Storage 기본 URL
+        
+        // Firebase Storage 초기화
+        this.initFirebaseStorage();
+    }
+
+    /**
+     * Firebase Storage 초기화
+     */
+    async initFirebaseStorage() {
+        let attempts = 0;
+        const maxAttempts = 50; // 5초 대기
+
+        while (attempts < maxAttempts) {
+            if (window.Firebase && window.Firebase.app && firebase.storage) {
+                try {
+                    this.storage = firebase.storage();
+                    this.isFirebaseReady = true;
+                    
+                    // Storage 기본 URL 설정
+                    const storageRef = this.storage.ref();
+                    this.storageBaseUrl = `https://firebasestorage.googleapis.com/v0/b/${window.CONFIG.FIREBASE_CONFIG.storageBucket}/o`;
+                    
+                    console.log('✅ Firebase Storage connected to ImageService');
+                    return true;
+                } catch (error) {
+                    console.warn('⚠️ Firebase Storage initialization error:', error);
+                }
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        console.warn('⚠️ Firebase Storage not available - using local images only');
+        return false;
     }
 
     /**
@@ -28,12 +63,40 @@ class ImageService {
             return imageName;
         }
 
-        // CDN 사용 시
+        // Firebase Storage URL 직접 구성 (최우선)
+        if (window.CONFIG?.FIREBASE_CONFIG?.storageBucket) {
+            const storageBucket = window.CONFIG.FIREBASE_CONFIG.storageBucket;
+            const cleanImageName = imageName.startsWith('landmarks/') ? 
+                imageName.substring(10) : imageName;
+            const encodedPath = encodeURIComponent(`landmarks/${cleanImageName}`);
+            const firebaseUrl = `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedPath}?alt=media`;
+            
+            console.log(`🖼️ Firebase Storage URL for ${imageName}: ${firebaseUrl}`);
+            return firebaseUrl;
+        }
+
+        // Firebase Storage 인스턴스를 통한 URL 생성 (backup)
+        if (this.isFirebaseReady && this.storage) {
+            try {
+                const storageBucket = window.CONFIG?.FIREBASE_CONFIG?.storageBucket;
+                if (storageBucket) {
+                    const cleanImageName = imageName.startsWith('landmarks/') ? 
+                        imageName.substring(10) : imageName;
+                    const encodedPath = encodeURIComponent(`landmarks/${cleanImageName}`);
+                    return `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedPath}?alt=media`;
+                }
+            } catch (error) {
+                console.warn('⚠️ Firebase Storage URL generation failed:', error);
+            }
+        }
+
+        // CDN 사용 시 (우선순위 3)
         if (this.cdnBaseUrl) {
             return `${this.cdnBaseUrl}/landmarks/${imageName}`;
         }
 
-        // 로컬 이미지 경로
+        // 로컬 이미지 경로 (최종 fallback - 개발 모드만)
+        console.warn(`⚠️ Using local fallback for image: ${imageName}`);
         return `${this.baseImagePath}/landmarks/${imageName}`;
     }
 
@@ -96,13 +159,8 @@ class ImageService {
         const paths = Array.isArray(imagePaths) ? imagePaths : [imagePaths];
         
         const loadPromises = paths.map(async (path) => {
-            if (this.preloadedImages.has(path)) {
-                return { path, status: 'already-loaded' };
-            }
-
             try {
                 await this.loadImage(path);
-                this.preloadedImages.add(path);
                 return { path, status: 'loaded' };
             } catch (error) {
                 console.warn(`⚠️ Failed to preload image: ${path}`, error);
@@ -122,14 +180,8 @@ class ImageService {
         return new Promise((resolve, reject) => {
             const img = new Image();
             
-            img.onload = () => {
-                this.imageCache.set(imagePath, img);
-                resolve(img);
-            };
-            
-            img.onerror = () => {
-                reject(new Error(`Failed to load image: ${imagePath}`));
-            };
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`Failed to load image: ${imagePath}`));
             
             img.src = imagePath;
         });
@@ -277,9 +329,94 @@ class ImageService {
      * 이미지 캐시를 초기화합니다
      */
     clearImageCache() {
-        this.imageCache.clear();
-        this.preloadedImages.clear();
         console.log('🗑️ Image cache cleared');
+    }
+
+    /**
+     * Firebase Storage에 이미지를 업로드합니다
+     * @param {File} file - 업로드할 파일
+     * @param {string} path - Storage 내 경로 (예: 'landmarks/image.jpg')
+     * @returns {Promise<string>} 업로드된 파일의 다운로드 URL
+     */
+    async uploadToStorage(file, path) {
+        if (!this.isFirebaseReady) {
+            throw new Error('Firebase Storage not initialized');
+        }
+
+        try {
+            console.log(`📤 Uploading ${file.name} to ${path}...`);
+            
+            const storageRef = this.storage.ref(path);
+            const snapshot = await storageRef.put(file);
+            const downloadURL = await snapshot.ref.getDownloadURL();
+            
+            console.log(`✅ Upload successful: ${downloadURL}`);
+            return downloadURL;
+            
+        } catch (error) {
+            console.error(`❌ Upload failed for ${path}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Firebase Storage에서 이미지를 삭제합니다
+     * @param {string} path - Storage 내 경로
+     * @returns {Promise<void>}
+     */
+    async deleteFromStorage(path) {
+        if (!this.isFirebaseReady) {
+            throw new Error('Firebase Storage not initialized');
+        }
+
+        try {
+            const storageRef = this.storage.ref(path);
+            await storageRef.delete();
+            console.log(`🗑️ Deleted: ${path}`);
+        } catch (error) {
+            console.error(`❌ Delete failed for ${path}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Firebase Storage에서 이미지 목록을 가져옵니다
+     * @param {string} folderPath - 폴더 경로 (예: 'landmarks/')
+     * @returns {Promise<Array>} 이미지 정보 배열
+     */
+    async listStorageImages(folderPath) {
+        if (!this.isFirebaseReady) {
+            throw new Error('Firebase Storage not initialized');
+        }
+
+        try {
+            const storageRef = this.storage.ref(folderPath);
+            const result = await storageRef.listAll();
+            
+            const imageList = await Promise.all(
+                result.items.map(async (itemRef) => {
+                    const url = await itemRef.getDownloadURL();
+                    const metadata = await itemRef.getMetadata();
+                    
+                    return {
+                        name: itemRef.name,
+                        fullPath: itemRef.fullPath,
+                        url: url,
+                        size: metadata.size,
+                        contentType: metadata.contentType,
+                        created: metadata.timeCreated,
+                        updated: metadata.updated
+                    };
+                })
+            );
+            
+            console.log(`📋 Found ${imageList.length} images in ${folderPath}`);
+            return imageList;
+            
+        } catch (error) {
+            console.error(`❌ Failed to list images in ${folderPath}:`, error);
+            throw error;
+        }
     }
 
     /**
@@ -291,9 +428,11 @@ class ImageService {
             baseImagePath: this.baseImagePath,
             cdnBaseUrl: this.cdnBaseUrl,
             fallbackImage: this.fallbackImage,
-            cachedImages: this.imageCache.size,
-            preloadedImages: this.preloadedImages.size,
-            usingCdn: !!this.cdnBaseUrl
+            usingCdn: !!this.cdnBaseUrl,
+            isFirebaseReady: this.isFirebaseReady,
+            storageBaseUrl: this.storageBaseUrl,
+            mode: this.isFirebaseReady ? 'firebase-storage' : 
+                  this.cdnBaseUrl ? 'cdn' : 'local'
         };
     }
 }
