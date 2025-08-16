@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 개발/테스트용 - 모든 읽기 허용
+    match /{document=**} {
+      allow read: if true;
+      allow write: if true;  // 테스트용 임시 설정
+    }
+  }
+}

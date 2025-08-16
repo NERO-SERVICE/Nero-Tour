@@ -107,14 +107,14 @@ if (document.readyState === 'loading') {
     initializeFirebase();
 }
 
-// Export for global access
+// Export for global access - Use getter functions to return current values
 window.Firebase = {
-    app: FirebaseApp,
-    db: FirebaseDB,
-    auth: FirebaseAuth,
-    analytics: FirebaseAnalytics,
-    functions: FirebaseFunctions,
-    storage: FirebaseStorage,
+    get app() { return FirebaseApp; },
+    get db() { return FirebaseDB; },
+    get auth() { return FirebaseAuth; },
+    get analytics() { return FirebaseAnalytics; },
+    get functions() { return FirebaseFunctions; },
+    get storage() { return FirebaseStorage; },
     initialize: initializeFirebase,
     isInitialized: () => !!FirebaseApp,
     getStatus: () => ({
