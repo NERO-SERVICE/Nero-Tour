@@ -1,4 +1,6 @@
 // Seoul Map Manager - Dedicated map functionality with Custom Markers
+import { dataService, imageService } from '../services/index.js';
+
 class SeoulMapManager {
     constructor() {
         this.map = null;
@@ -8,12 +10,23 @@ class SeoulMapManager {
         this.trafficLayer = null;
         this.isTrafficVisible = false;
         this.isFullscreen = false;
+        this.landmarks = []; // 캐시된 랜드마크 데이터
         
         this.init();
     }
 
     async init() {
         console.log('🗺️ Initializing Seoul Map Manager...');
+        
+        try {
+            // 서비스 초기화 및 랜드마크 데이터 로드
+            this.landmarks = await dataService.getAllLandmarks();
+            console.log('✅ Landmarks data loaded for map');
+        } catch (error) {
+            console.error('❌ Failed to load landmarks data:', error);
+            // fallback으로 기존 데이터 사용
+            this.landmarks = this.getSeoulLandmarksLegacy();
+        }
         
         // Start getting user location immediately
         this.getCurrentLocation();
@@ -22,8 +35,23 @@ class SeoulMapManager {
         this.setupControlListeners();
     }
 
-    // Seoul Landmarks Data (same as main app)
-    getSeoulLandmarks() {
+    // 서비스에서 랜드마크 데이터를 가져오는 새로운 메서드
+    async getSeoulLandmarks() {
+        try {
+            if (this.landmarks.length > 0) {
+                return this.landmarks;
+            }
+            
+            this.landmarks = await dataService.getAllLandmarks();
+            return this.landmarks;
+        } catch (error) {
+            console.error('❌ Error loading landmarks from service:', error);
+            return this.getSeoulLandmarksLegacy();
+        }
+    }
+    
+    // 기존 하드코딩된 데이터 (fallback용)
+    getSeoulLandmarksLegacy() {
         return [
             {
                 id: 'naksan-park',
@@ -33,7 +61,7 @@ class SeoulMapManager {
                 description: 'Hillside park with panoramic Seoul views and ancient fortress walls',
                 coordinates: { lat: 37.5806, lng: 127.0075 },
                 icon: 'fas fa-mountain',
-                image: '../../public/assets/낙산공원.png',
+                image: 'landmarks/낙산공원.png',
                 tags: ['Historical', 'Views', 'Walking']
             },
             {
@@ -44,7 +72,7 @@ class SeoulMapManager {
                 description: 'Iconic communication tower offering panoramic city views',
                 coordinates: { lat: 37.5512, lng: 126.9882 },
                 icon: 'fas fa-broadcast-tower',
-                image: '../../public/assets/남산타워.png',
+                image: 'landmarks/남산타워.png',
                 tags: ['Landmark', 'Views', 'Romance']
             },
             {
@@ -55,7 +83,7 @@ class SeoulMapManager {
                 description: 'Korea\'s premier shopping and beauty district',
                 coordinates: { lat: 37.5636, lng: 126.9824 },
                 icon: 'fas fa-shopping-bag',
-                image: '../../public/assets/명동.png',
+                image: 'landmarks/명동.png',
                 tags: ['Shopping', 'Food', 'Beauty']
             },
             {
@@ -66,7 +94,7 @@ class SeoulMapManager {
                 description: 'Major subway interchange connecting eastern Seoul districts',
                 coordinates: { lat: 37.5342, lng: 127.0822 },
                 icon: 'fas fa-subway',
-                image: '../../public/assets/자양역.png',
+                image: 'landmarks/자양역.png',
                 tags: ['Transportation', 'Local Life', 'Residential']
             },
             {
@@ -77,7 +105,7 @@ class SeoulMapManager {
                 description: 'Korea\'s tallest skyscraper with shopping and observation decks',
                 coordinates: { lat: 37.5120, lng: 127.1020 },
                 icon: 'fas fa-building',
-                image: '../../public/assets/롯데월드타워.png',
+                image: 'landmarks/롯데월드타워.png',
                 tags: ['Modern', 'Views', 'Shopping']
             },
             {
@@ -88,7 +116,7 @@ class SeoulMapManager {
                 description: 'Major sports complex hosting baseball, soccer, and events',
                 coordinates: { lat: 37.5120, lng: 127.0719 },
                 icon: 'fas fa-futbol',
-                image: '../../public/assets/잠실주경기장.png',
+                image: 'landmarks/잠실주경기장.png',
                 tags: ['Sports', 'Entertainment', 'Olympics']
             },
             {
@@ -99,7 +127,7 @@ class SeoulMapManager {
                 description: 'Traditional Korean architecture village between palaces',
                 coordinates: { lat: 37.5825, lng: 126.9833 },
                 icon: 'fas fa-home',
-                image: '../../public/assets/북촌한옥마을.png',
+                image: 'landmarks/북촌한옥마을.png',
                 tags: ['Traditional', 'Architecture', 'Culture']
             },
             {
@@ -110,7 +138,7 @@ class SeoulMapManager {
                 description: 'Major business district with COEX Mall and convention center',
                 coordinates: { lat: 37.5072, lng: 127.0553 },
                 icon: 'fas fa-briefcase',
-                image: '../../public/assets/삼성역.png',
+                image: 'landmarks/삼성역.png',
                 tags: ['Business', 'Shopping', 'Modern']
             }
         ];
@@ -147,7 +175,7 @@ class SeoulMapManager {
                         <div class="image-gallery" id="imageGallery-${landmark.id}">
                             ${landmark.image ? 
                                 `<div class="gallery-item active">
-                                     <img src="${landmark.image}" alt="${landmark.name}" 
+                                     <img src="${imageService.getLandmarkImage(landmark.image)}" alt="${landmark.name}" 
                                           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                      <div class="image-fallback" style="display: none;">
                                          <span class="fallback-icon">${this.getCategoryIcon(landmark.category)}</span>
@@ -714,36 +742,40 @@ class SeoulMapManager {
     }
 
     // Add markers for Seoul attractions with custom icons
-    addAttractionMarkers() {
+    async addAttractionMarkers() {
         if (!this.map) return;
 
-        const landmarks = this.getSeoulLandmarks();
-        
-        landmarks.forEach(landmark => {
-            // Create simple icon-based marker
-            const markerIcon = this.createCustomMarkerIcon(landmark);
+        try {
+            const landmarks = await this.getSeoulLandmarks();
             
-            const marker = new google.maps.Marker({
-                position: landmark.coordinates,
-                map: this.map,
-                title: landmark.name,
-                icon: markerIcon,
-                zIndex: 100
+            landmarks.forEach(landmark => {
+                // Create simple icon-based marker
+                const markerIcon = this.createCustomMarkerIcon(landmark);
+                
+                const marker = new google.maps.Marker({
+                    position: landmark.coordinates,
+                    map: this.map,
+                    title: landmark.name,
+                    icon: markerIcon,
+                    zIndex: 100
+                });
+
+                // Store marker reference with landmark data
+                this.attractionMarkers.push({
+                    marker: marker,
+                    landmark: landmark
+                });
+
+                // Add click listener to show bottom sheet instead of info window
+                marker.addListener('click', () => {
+                    this.showLandmarkBottomSheet(landmark);
+                });
             });
 
-            // Store marker reference with landmark data
-            this.attractionMarkers.push({
-                marker: marker,
-                landmark: landmark
-            });
-
-            // Add click listener to show bottom sheet instead of info window
-            marker.addListener('click', () => {
-                this.showLandmarkBottomSheet(landmark);
-            });
-        });
-
-        console.log(`✅ Added ${landmarks.length} attraction markers with icon-based pins`);
+            console.log(`✅ Added ${landmarks.length} attraction markers with icon-based pins`);
+        } catch (error) {
+            console.error('❌ Error adding attraction markers:', error);
+        }
     }
 
     // Rest of the methods remain the same...
@@ -846,7 +878,7 @@ class SeoulMapManager {
             this.updateUserLocationOnMap();
 
             // Add attraction markers with simple icon-based pins
-            this.addAttractionMarkers();
+            await this.addAttractionMarkers();
 
             // Initialize traffic layer
             this.trafficLayer = new google.maps.TrafficLayer();
@@ -967,15 +999,23 @@ class SeoulMapManager {
     }
 
     // Get directions to a landmark
-    getDirections(landmarkId) {
-        const landmark = this.getSeoulLandmarks().find(l => l.id === landmarkId);
-        if (!landmark) return;
+    async getDirections(landmarkId) {
+        try {
+            const landmarks = await this.getSeoulLandmarks();
+            const landmark = landmarks.find(l => l.id === landmarkId);
+            if (!landmark) {
+                console.error('❌ Landmark not found:', landmarkId);
+                return;
+            }
 
-        const destination = `${landmark.coordinates.lat},${landmark.coordinates.lng}`;
-        const url = `https://maps.google.com/maps?daddr=${destination}&dirflg=w`;
-        
-        window.open(url, '_blank');
-        console.log(`🗺️ Opened directions to ${landmark.name}`);
+            const destination = `${landmark.coordinates.lat},${landmark.coordinates.lng}`;
+            const url = `https://maps.google.com/maps?daddr=${destination}&dirflg=w`;
+            
+            window.open(url, '_blank');
+            console.log(`🗺️ Opened directions to ${landmark.name}`);
+        } catch (error) {
+            console.error('❌ Error getting directions:', error);
+        }
     }
 
     // Toggle fullscreen mode

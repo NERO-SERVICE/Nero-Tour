@@ -1,4 +1,6 @@
 // Detail Page JavaScript - Seoul Explorer
+import { dataService, imageService } from '../services/index.js';
+
 class DetailPage {
     constructor() {
         this.locationId = null;
@@ -31,12 +33,10 @@ class DetailPage {
         return urlParams.get('location');
     }
 
-    loadLocationData() {
+    async loadLocationData() {
         try {
-            // Get landmarks data directly without instantiating SeoulExplorer
-            const landmarks = this.getSeoulLandmarksData();
-            
-            this.locationData = landmarks.find(location => location.id === this.locationId);
+            // 서비스를 통해 랜드마크 데이터 로드
+            this.locationData = await dataService.getLandmarkById(this.locationId);
             
             if (!this.locationData) {
                 console.error('Location not found:', this.locationId);
@@ -47,7 +47,23 @@ class DetailPage {
             this.renderLocationDetails();
         } catch (error) {
             console.error('Error loading location data:', error);
-            this.showError();
+            // fallback으로 기존 데이터 사용
+            const landmarks = this.getSeoulLandmarksData();
+            this.locationData = landmarks.find(location => location.id === this.locationId);
+            
+            if (this.locationData) {
+                // 이미지 경로 변환
+                this.locationData.image = imageService.getLandmarkImage(this.locationData.image);
+                if (this.locationData.detailSections) {
+                    this.locationData.detailSections = this.locationData.detailSections.map(section => ({
+                        ...section,
+                        image: imageService.getLandmarkImage(section.image)
+                    }));
+                }
+                this.renderLocationDetails();
+            } else {
+                this.showError();
+            }
         }
     }
 
@@ -63,7 +79,7 @@ class DetailPage {
                 longDescription: 'Located on Naksan Mountain (125m), this park offers stunning panoramic views of Seoul. Walk along the 2.1km ancient fortress wall section from Hyehwamun to Heunginjimun, connecting to the famous Ihwa Mural Village.',
                 coordinates: { lat: 37.5806, lng: 127.0075 },
                 icon: 'fas fa-mountain',
-                image: '../../public/assets/낙산공원.png',
+                image: 'landmarks/낙산공원.png',
                 tags: ['Historical', 'Views', 'Walking'],
                 tips: [
                     'Best views of Seoul skyline especially at sunset',
@@ -84,7 +100,7 @@ class DetailPage {
                 longDescription: 'Standing 236 meters above sea level on Namsan Mountain, N Seoul Tower is Seoul\'s most recognizable landmark. The tower offers breathtaking 360-degree views of the city and is famous for its "love locks" tradition.',
                 coordinates: { lat: 37.5512, lng: 126.9882 },
                 icon: 'fas fa-broadcast-tower',
-                image: '../../public/assets/남산타워.png',
+                image: 'landmarks/남산타워.png',
                 tags: ['Landmark', 'Views', 'Romance'],
                 tips: [
                     'Take the cable car up for scenic views',
@@ -105,7 +121,7 @@ class DetailPage {
                 longDescription: 'Discover Seoul\'s most vibrant shopping and beauty district, where traditional Korean culture meets modern retail therapy. From world-renowned K-beauty products to authentic street food, Myeong-dong offers an immersive experience into Korean lifestyle.',
                 coordinates: { lat: 37.5636, lng: 126.9824 },
                 icon: 'fas fa-shopping-bag',
-                image: '../../public/assets/명동.png',
+                image: 'landmarks/명동.png',
                 tags: ['Shopping', 'Food', 'Beauty'],
                 tips: [
                     'Try Korean skincare products - many stores offer free samples',
@@ -119,22 +135,22 @@ class DetailPage {
                 detailSections: [
                     {
                         title: 'K-Beauty Paradise',
-                        image: '../../public/assets/명동-화장품.png',
+                        image: 'landmarks/명동-화장품.png',
                         description: 'Myeong-dong is the epicenter of Korean beauty culture. Walk through streets lined with flagship stores of famous brands like Innisfree, Etude House, and The Face Shop. Experience the latest in Korean skincare technology with free consultations and product samples. Many stores offer English-speaking staff and tax-free shopping for tourists.'
                     },
                     {
                         title: 'Street Food Heaven',
-                        image: '../../public/assets/명동-길거리음식.png',
+                        image: 'landmarks/명동-길거리음식.png',
                         description: 'As evening falls, Myeong-dong transforms into a street food paradise. Try iconic Korean snacks like hotteok (sweet pancakes), tteokbokki (spicy rice cakes), and Korean corn dogs. The street food market operates from late afternoon until early morning, offering authentic flavors at budget-friendly prices.'
                     },
                     {
                         title: 'Fashion & Shopping',
-                        image: '../../public/assets/명동-쇼핑.png',
+                        image: 'landmarks/명동-쇼핑.png',
                         description: 'From high-end department stores like Lotte and Shinsegae to trendy boutiques and international brands, Myeong-dong caters to every fashion taste and budget. The area features both luxury shopping experiences and affordable fashion finds, making it a complete retail destination.'
                     },
                     {
                         title: 'Cultural Experience',
-                        image: '../../public/assets/명동-문화.png',
+                        image: 'landmarks/명동-문화.png',
                         description: 'Beyond shopping, Myeong-dong offers cultural experiences including traditional Korean performances, art galleries, and historic Myeong-dong Cathedral. The area seamlessly blends modern consumer culture with Korean traditions, providing visitors with a well-rounded cultural experience.'
                     }
                 ]
@@ -148,7 +164,7 @@ class DetailPage {
                 longDescription: 'Located in Gwangjin District, Jayang Station serves as an important transit hub on Line 7. The area features modern residential complexes, local markets, and easy access to the Han River parks.',
                 coordinates: { lat: 37.5342, lng: 127.0822 },
                 icon: 'fas fa-subway',
-                image: '../../public/assets/자양역.png',
+                image: 'landmarks/자양역.png',
                 tags: ['Transportation', 'Local Life', 'Residential'],
                 tips: [
                     'Great access point to Han River parks',
@@ -169,7 +185,7 @@ class DetailPage {
                 longDescription: 'At 555 meters tall, Lotte World Tower is the 6th tallest building in the world. Features Seoul Sky observation deck, luxury shopping, restaurants, and direct connection to Lotte World theme park.',
                 coordinates: { lat: 37.5120, lng: 127.1020 },
                 icon: 'fas fa-building',
-                image: '../../public/assets/롯데월드타워.png',
+                image: 'landmarks/롯데월드타워.png',
                 tags: ['Modern', 'Views', 'Shopping'],
                 tips: [
                     'Visit Seoul Sky observatory on floors 117-123',
@@ -190,7 +206,7 @@ class DetailPage {
                 longDescription: 'Built for the 1988 Seoul Olympics, this massive complex includes Olympic Stadium, baseball stadium, and indoor arena. Home to LG Twins baseball team and major K-pop concerts.',
                 coordinates: { lat: 37.5120, lng: 127.0719 },
                 icon: 'fas fa-futbol',
-                image: '../../public/assets/잠실주경기장.png',
+                image: 'landmarks/잠실주경기장.png',
                 tags: ['Sports', 'Entertainment', 'Olympics'],
                 tips: [
                     'Check schedules for baseball games or concerts',
@@ -211,7 +227,7 @@ class DetailPage {
                 longDescription: 'A well-preserved traditional village with over 600 years of history, featuring beautiful hanok (traditional Korean houses). Perfect for experiencing traditional Korean architecture and culture.',
                 coordinates: { lat: 37.5825, lng: 126.9833 },
                 icon: 'fas fa-home',
-                image: '../../public/assets/북촌한옥마을.png',
+                image: 'landmarks/북촌한옥마을.png',
                 tags: ['Traditional', 'Architecture', 'Culture'],
                 tips: [
                     'Visit early morning or late afternoon for fewer crowds',
@@ -232,7 +248,7 @@ class DetailPage {
                 longDescription: 'Located in the heart of Gangnam, Samsung Station connects to Asia\'s largest underground shopping mall (COEX). The area features corporate headquarters, luxury hotels, and entertainment venues.',
                 coordinates: { lat: 37.5072, lng: 127.0553 },
                 icon: 'fas fa-briefcase',
-                image: '../../public/assets/삼성역.png',
+                image: 'landmarks/삼성역.png',
                 tags: ['Business', 'Shopping', 'Modern'],
                 tips: [
                     'Explore massive COEX underground mall',
@@ -283,10 +299,11 @@ class DetailPage {
         }
 
         // Build content
+        const heroImageSrc = this.locationData.image || imageService.getLandmarkImage(this.locationData.image);
         const contentHTML = `
             <!-- Hero Section -->
             <div class="detail-hero">
-                <img src="${this.locationData.image}" alt="${this.locationData.name}" 
+                <img src="${heroImageSrc}" alt="${this.locationData.name}" 
                      onerror="this.parentElement.classList.add('no-image');">
                 <div class="detail-hero-overlay">
                     <div class="detail-hero-title">${this.locationData.name}</div>
@@ -356,6 +373,13 @@ class DetailPage {
         `;
 
         detailContent.innerHTML = contentHTML;
+        
+        // 이미지 fallback 처리 추가
+        const images = detailContent.querySelectorAll('img');
+        images.forEach(img => {
+            imageService.addImageFallback(img);
+        });
+        
         console.log('Content rendered successfully');
     }
 
@@ -364,16 +388,19 @@ class DetailPage {
             return '';
         }
 
-        return this.locationData.detailSections.map(section => `
-            <div class="detail-section">
-                <div class="detail-section-image">
-                    <img src="${section.image}" alt="${section.title}" 
-                         onerror="this.parentElement.style.display='none';">
+        return this.locationData.detailSections.map(section => {
+            const sectionImageSrc = section.image || imageService.getLandmarkImage(section.image);
+            return `
+                <div class="detail-section">
+                    <div class="detail-section-image">
+                        <img src="${sectionImageSrc}" alt="${section.title}" 
+                             onerror="this.parentElement.style.display='none';">
+                    </div>
+                    <div class="detail-section-title">${section.title}</div>
+                    <div class="detail-section-description">${section.description}</div>
                 </div>
-                <div class="detail-section-title">${section.title}</div>
-                <div class="detail-section-description">${section.description}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     showError() {

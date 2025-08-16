@@ -1,23 +1,69 @@
 // Seoul Explorer - Mobile Tourism App for American Visitors
+import { dataService, imageService, initializeServices } from '../services/index.js';
+
 class SeoulExplorer {
     constructor() {
         this.currentLocation = null;
         this.selectedLocation = null;
         // Favorites functionality removed for simplified UX
         this.debugMode = false; // Enable for testing
+        this.landmarks = []; // 캐시된 랜드마크 데이터
         
         this.init();
     }
 
-    init() {
+    async init() {
+        try {
+            // 서비스 초기화
+            await initializeServices({
+                preloadData: true,
+                preloadImages: true
+            });
+            
+            // 랜드마크 데이터 로드
+            this.landmarks = await dataService.getAllLandmarks();
+            
+            // UI 초기화
+            this.initializeEventListeners();
+            this.renderLocationCards();
+            this.getCurrentLocation();
+            this.setupCardResizeObserver();
+            
+            console.log('✅ Seoul Explorer initialized successfully');
+        } catch (error) {
+            console.error('❌ Failed to initialize Seoul Explorer:', error);
+            // fallback으로 기존 방식 사용
+            this.initializeFallback();
+        }
+    }
+    
+    // fallback 초기화 (서비스 로드 실패 시)
+    initializeFallback() {
+        console.log('🔄 Using fallback initialization');
+        this.landmarks = this.getSeoulLandmarksLegacy();
         this.initializeEventListeners();
         this.renderLocationCards();
         this.getCurrentLocation();
         this.setupCardResizeObserver();
     }
 
-    // Seoul Landmarks Data Structure
-    getSeoulLandmarks() {
+    // 서비스에서 랜드마크 데이터를 가져오는 새로운 메서드
+    async getSeoulLandmarks() {
+        try {
+            if (this.landmarks.length > 0) {
+                return this.landmarks;
+            }
+            
+            this.landmarks = await dataService.getAllLandmarks();
+            return this.landmarks;
+        } catch (error) {
+            console.error('❌ Error loading landmarks from service:', error);
+            return this.getSeoulLandmarksLegacy();
+        }
+    }
+    
+    // 기존 하드코딩된 데이터 (fallback용)
+    getSeoulLandmarksLegacy() {
         return [
             {
                 id: 'naksan-park',
@@ -28,7 +74,7 @@ class SeoulExplorer {
                 longDescription: 'Located on Naksan Mountain (125m), this park offers stunning panoramic views of Seoul. Walk along the 2.1km ancient fortress wall section from Hyehwamun to Heunginjimun, connecting to the famous Ihwa Mural Village.',
                 coordinates: { lat: 37.5806, lng: 127.0075 },
                 icon: 'fas fa-mountain',
-                image: '../../public/assets/낙산공원.png',
+                image: 'landmarks/낙산공원.png',
                 tags: ['Historical', 'Views', 'Walking'],
                 tips: [
                     'Best views of Seoul skyline especially at sunset',
@@ -49,7 +95,7 @@ class SeoulExplorer {
                 longDescription: 'Standing 236 meters above sea level on Namsan Mountain, N Seoul Tower is Seoul\'s most recognizable landmark. The tower offers breathtaking 360-degree views of the city and is famous for its "love locks" tradition.',
                 coordinates: { lat: 37.5512, lng: 126.9882 },
                 icon: 'fas fa-broadcast-tower',
-                image: '../../public/assets/남산타워.png',
+                image: 'landmarks/남산타워.png',
                 tags: ['Landmark', 'Views', 'Romance'],
                 tips: [
                     'Take the cable car up for scenic views',
@@ -70,7 +116,7 @@ class SeoulExplorer {
                 longDescription: 'Discover Seoul\'s most vibrant shopping and beauty district, where traditional Korean culture meets modern retail therapy. From world-renowned K-beauty products to authentic street food, Myeong-dong offers an immersive experience into Korean lifestyle.',
                 coordinates: { lat: 37.5636, lng: 126.9824 },
                 icon: 'fas fa-shopping-bag',
-                image: '../../public/assets/명동.png',
+                image: 'landmarks/명동.png',
                 tags: ['Shopping', 'Food', 'Beauty'],
                 tips: [
                     'Try Korean skincare products - many stores offer free samples',
@@ -84,22 +130,22 @@ class SeoulExplorer {
                 detailSections: [
                     {
                         title: 'K-Beauty Paradise',
-                        image: '../../public/assets/명동-화장품.png',
+                        image: 'landmarks/명동-화장품.png',
                         description: 'Myeong-dong is the epicenter of Korean beauty culture. Walk through streets lined with flagship stores of famous brands like Innisfree, Etude House, and The Face Shop. Experience the latest in Korean skincare technology with free consultations and product samples. Many stores offer English-speaking staff and tax-free shopping for tourists.'
                     },
                     {
                         title: 'Street Food Heaven',
-                        image: '../../public/assets/명동-길거리음식.png',
+                        image: 'landmarks/명동-길거리음식.png',
                         description: 'As evening falls, Myeong-dong transforms into a street food paradise. Try iconic Korean snacks like hotteok (sweet pancakes), tteokbokki (spicy rice cakes), and Korean corn dogs. The street food market operates from late afternoon until early morning, offering authentic flavors at budget-friendly prices.'
                     },
                     {
                         title: 'Fashion & Shopping',
-                        image: '../../public/assets/명동-쇼핑.png',
+                        image: 'landmarks/명동-쇼핑.png',
                         description: 'From high-end department stores like Lotte and Shinsegae to trendy boutiques and international brands, Myeong-dong caters to every fashion taste and budget. The area features both luxury shopping experiences and affordable fashion finds, making it a complete retail destination.'
                     },
                     {
                         title: 'Cultural Experience',
-                        image: '../../public/assets/명동-문화.png',
+                        image: 'landmarks/명동-문화.png',
                         description: 'Beyond shopping, Myeong-dong offers cultural experiences including traditional Korean performances, art galleries, and historic Myeong-dong Cathedral. The area seamlessly blends modern consumer culture with Korean traditions, providing visitors with a well-rounded cultural experience.'
                     }
                 ]
@@ -113,7 +159,7 @@ class SeoulExplorer {
                 longDescription: 'Located in Gwangjin District, Jayang Station serves as an important transit hub on Line 7. The area features modern residential complexes, local markets, and easy access to the Han River parks.',
                 coordinates: { lat: 37.5342, lng: 127.0822 },
                 icon: 'fas fa-subway',
-                image: '../../public/assets/자양역.png',
+                image: 'landmarks/자양역.png',
                 tags: ['Transportation', 'Local Life', 'Residential'],
                 tips: [
                     'Great access point to Han River parks',
@@ -134,7 +180,7 @@ class SeoulExplorer {
                 longDescription: 'At 555 meters tall, Lotte World Tower is the 6th tallest building in the world. Features Seoul Sky observation deck, luxury shopping, restaurants, and direct connection to Lotte World theme park.',
                 coordinates: { lat: 37.5120, lng: 127.1020 },
                 icon: 'fas fa-building',
-                image: '../../public/assets/롯데월드타워.png',
+                image: 'landmarks/롯데월드타워.png',
                 tags: ['Modern', 'Views', 'Shopping'],
                 tips: [
                     'Visit Seoul Sky observatory on floors 117-123',
@@ -155,7 +201,7 @@ class SeoulExplorer {
                 longDescription: 'Built for the 1988 Seoul Olympics, this massive complex includes Olympic Stadium, baseball stadium, and indoor arena. Home to LG Twins baseball team and major K-pop concerts.',
                 coordinates: { lat: 37.5120, lng: 127.0719 },
                 icon: 'fas fa-futbol',
-                image: '../../public/assets/잠실주경기장.png',
+                image: 'landmarks/잠실주경기장.png',
                 tags: ['Sports', 'Entertainment', 'Olympics'],
                 tips: [
                     'Check schedules for baseball games or concerts',
@@ -176,7 +222,7 @@ class SeoulExplorer {
                 longDescription: 'A well-preserved traditional village with over 600 years of history, featuring beautiful hanok (traditional Korean houses). Perfect for experiencing traditional Korean architecture and culture.',
                 coordinates: { lat: 37.5825, lng: 126.9833 },
                 icon: 'fas fa-home',
-                image: '../../public/assets/북촌한옥마을.png',
+                image: 'landmarks/북촌한옥마을.png',
                 tags: ['Traditional', 'Architecture', 'Culture'],
                 tips: [
                     'Visit early morning or late afternoon for fewer crowds',
@@ -197,7 +243,7 @@ class SeoulExplorer {
                 longDescription: 'Located in the heart of Gangnam, Samsung Station connects to Asia\'s largest underground shopping mall (COEX). The area features corporate headquarters, luxury hotels, and entertainment venues.',
                 coordinates: { lat: 37.5072, lng: 127.0553 },
                 icon: 'fas fa-briefcase',
-                image: '../../public/assets/삼성역.png',
+                image: 'landmarks/삼성역.png',
                 tags: ['Business', 'Shopping', 'Modern'],
                 tips: [
                     'Explore massive COEX underground mall',
@@ -242,7 +288,7 @@ class SeoulExplorer {
         );
     }
 
-    handleLocationSuccess() {
+    async handleLocationSuccess() {
         const locationStatus = document.getElementById('currentLocation');
         const locationInfo = document.getElementById('locationInfo');
         
@@ -260,21 +306,31 @@ class SeoulExplorer {
         
         // Update location info section (only if element exists)
         if (locationInfo) {
-            const nearbyLocations = this.findNearbyLocations();
-            
-            if (nearbyLocations.length > 0) {
-                locationInfo.innerHTML = `
-                    <div class="success-state">
-                        <h3>📍 Nearby Attractions</h3>
-                        ${nearbyLocations.slice(0, 3).map(location => `
-                            <div style="margin: 8px 0; padding: 8px; border-left: 3px solid #4caf50;">
-                                <strong>${location.name}</strong><br>
-                                <small>${location.distance} away • ${location.category}</small>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            } else {
+            try {
+                const nearbyLocations = await this.findNearbyLocations();
+                
+                if (nearbyLocations.length > 0) {
+                    locationInfo.innerHTML = `
+                        <div class="success-state">
+                            <h3>📍 Nearby Attractions</h3>
+                            ${nearbyLocations.slice(0, 3).map(location => `
+                                <div style="margin: 8px 0; padding: 8px; border-left: 3px solid #4caf50;">
+                                    <strong>${location.name}</strong><br>
+                                    <small>${location.distance} away • ${location.category}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    locationInfo.innerHTML = `
+                        <div class="success-state">
+                            <h3>📍 Welcome to Seoul!</h3>
+                            <p>Explore popular destinations below to start your Korean adventure.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ Error updating location info:', error);
                 locationInfo.innerHTML = `
                     <div class="success-state">
                         <h3>📍 Welcome to Seoul!</h3>
@@ -404,80 +460,117 @@ class SeoulExplorer {
         return R * c;
     }
 
-    findNearbyLocations() {
+    async findNearbyLocations() {
         if (!this.currentLocation) return [];
         
-        return this.getSeoulLandmarks()
-            .map(location => ({
+        try {
+            // 서비스를 통해 가까운 랜드마크 가져오기
+            const nearbyLandmarks = await dataService.getNearbyLandmarks(this.currentLocation, 10);
+            return nearbyLandmarks.map(location => ({
                 ...location,
-                distance: this.calculateDistance(
-                    this.currentLocation.lat,
-                    this.currentLocation.lng,
-                    location.coordinates.lat,
-                    location.coordinates.lng
-                ).toFixed(1) + ' km'
-            }))
-            .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+                distance: location.distance ? `${location.distance.toFixed(1)} km` : '0 km'
+            }));
+        } catch (error) {
+            console.error('❌ Error finding nearby locations:', error);
+            // fallback으로 기존 방식 사용
+            const landmarks = await this.getSeoulLandmarks();
+            return landmarks
+                .map(location => ({
+                    ...location,
+                    distance: this.calculateDistance(
+                        this.currentLocation.lat,
+                        this.currentLocation.lng,
+                        location.coordinates.lat,
+                        location.coordinates.lng
+                    ).toFixed(1) + ' km'
+                }))
+                .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+        }
     }
 
-    updateDistances() {
+    async updateDistances() {
         const locationCards = document.querySelectorAll('.location-card');
-        locationCards.forEach(card => {
-            const locationId = card.dataset.locationId;
-            const location = this.getSeoulLandmarks().find(l => l.id === locationId);
-            if (location && this.currentLocation) {
-                const distance = this.calculateDistance(
-                    this.currentLocation.lat,
-                    this.currentLocation.lng,
-                    location.coordinates.lat,
-                    location.coordinates.lng
-                ).toFixed(1);
-                
-                const distanceElement = card.querySelector('.distance-info');
-                if (distanceElement) {
-                    distanceElement.textContent = `${distance} km away`;
+        
+        try {
+            const landmarks = await this.getSeoulLandmarks();
+            
+            locationCards.forEach(card => {
+                const locationId = card.dataset.locationId;
+                const location = landmarks.find(l => l.id === locationId);
+                if (location && this.currentLocation) {
+                    const distance = this.calculateDistance(
+                        this.currentLocation.lat,
+                        this.currentLocation.lng,
+                        location.coordinates.lat,
+                        location.coordinates.lng
+                    ).toFixed(1);
+                    
+                    const distanceElement = card.querySelector('.distance-info');
+                    if (distanceElement) {
+                        distanceElement.textContent = `${distance} km away`;
+                    }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('❌ Error updating distances:', error);
+        }
     }
 
     // Render location cards
-    renderLocationCards() {
+    async renderLocationCards() {
         const locationsGrid = document.getElementById('locationsGrid');
-        const landmarks = this.getSeoulLandmarks();
         
-        locationsGrid.innerHTML = landmarks.map(location => `
-            <button class="location-card" data-location-id="${location.id}" onclick="seoulExplorer.navigateToDetail('${location.id}')">
-                <div class="location-image">
-                    ${location.image ? 
-                        `<img src="${location.image}" alt="${location.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                         <div class="icon-fallback" style="display:none;"><i class="${location.icon}"></i></div>` :
-                        `<div class="icon-fallback"><i class="${location.icon}"></i></div>`
-                    }
-                </div>
-                <div class="location-info">
-                    <h3 class="location-name">${location.name}</h3>
-                    <p class="location-korean">${location.nameKorean}</p>
-                    <p class="location-description">${location.description}</p>
-                    <div class="location-tags">
-                        ${location.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-                    </div>
-                    <div class="distance-info">Calculating distance...</div>
-                </div>
-            </button>
-        `).join('');
-        
-        // Apply dynamic image height adjustments after rendering
-        this.adjustCardImageHeights();
-        
-        // Setup observers for new cards
-        setTimeout(() => {
-            this.observeLocationCards();
-            // Run tests in debug mode
-            if (this.debugMode) {
-                setTimeout(() => this.testTagScenarios(), 500);
-            }
-        }, 100);
+        try {
+            const landmarks = await this.getSeoulLandmarks();
+            
+            locationsGrid.innerHTML = landmarks.map(location => {
+                // 이미지 서비스를 통해 경로 처리
+                const imageSrc = location.image ? imageService.getLandmarkImage(location.image) : null;
+                
+                return `
+                    <button class="location-card" data-location-id="${location.id}" onclick="seoulExplorer.navigateToDetail('${location.id}')">
+                        <div class="location-image">
+                            ${imageSrc ? 
+                                `<img src="${imageSrc}" alt="${location.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                 <div class="icon-fallback" style="display:none;"><i class="${location.icon}"></i></div>` :
+                                `<div class="icon-fallback"><i class="${location.icon}"></i></div>`
+                            }
+                        </div>
+                        <div class="location-info">
+                            <h3 class="location-name">${location.name}</h3>
+                            <p class="location-korean">${location.nameKorean}</p>
+                            <p class="location-description">${location.description}</p>
+                            <div class="location-tags">
+                                ${location.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                            <div class="distance-info">Calculating distance...</div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+            
+            // 이미지 fallback 처리 추가
+            const images = locationsGrid.querySelectorAll('img');
+            images.forEach(img => {
+                imageService.addImageFallback(img);
+            });
+            
+            // Apply dynamic image height adjustments after rendering
+            this.adjustCardImageHeights();
+            
+            // Setup observers for new cards
+            setTimeout(() => {
+                this.observeLocationCards();
+                // Run tests in debug mode
+                if (this.debugMode) {
+                    setTimeout(() => this.testTagScenarios(), 500);
+                }
+            }, 100);
+            
+        } catch (error) {
+            console.error('❌ Error rendering location cards:', error);
+            locationsGrid.innerHTML = '<p>Error loading locations. Please refresh the page.</p>';
+        }
     }
 
     // Dynamic image height adjustment based on tag content
@@ -721,14 +814,22 @@ class SeoulExplorer {
 
     // Navigation functionality
 
-    getDirections(locationId) {
-        const location = this.getSeoulLandmarks().find(l => l.id === locationId);
-        if (!location) return;
+    async getDirections(locationId) {
+        try {
+            const landmarks = await this.getSeoulLandmarks();
+            const location = landmarks.find(l => l.id === locationId);
+            if (!location) {
+                console.error('❌ Location not found:', locationId);
+                return;
+            }
 
-        const destination = `${location.coordinates.lat},${location.coordinates.lng}`;
-        const url = `https://maps.google.com/maps?daddr=${destination}&dirflg=w`;
-        
-        window.open(url, '_blank');
+            const destination = `${location.coordinates.lat},${location.coordinates.lng}`;
+            const url = `https://maps.google.com/maps?daddr=${destination}&dirflg=w`;
+            
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('❌ Error getting directions:', error);
+        }
     }
 
     handleNavigation(section) {
@@ -934,11 +1035,11 @@ class SeoulExplorer {
         }
     }
 
-    showExplore() {
+    async showExplore() {
         const sectionTitle = document.querySelector('.locations-section h2');
         if (sectionTitle) sectionTitle.textContent = 'Popular Seoul Destinations';
-        this.renderLocationCards();
-        this.updateDistances();
+        await this.renderLocationCards();
+        await this.updateDistances();
         this.addGuideToExplore();
     }
 

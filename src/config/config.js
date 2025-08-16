@@ -76,7 +76,7 @@ window.validateConfig = validateConfig;
 
 // Build info
 window.BUILD_INFO = {
-    timestamp: "2025-08-15T10:56:15.038Z",
+    timestamp: "2025-08-16T05:07:01.226Z",
     environment: "local",
     version: "1.0.0",
     source: ".env file"
