@@ -14,20 +14,25 @@ class SeoulExplorer {
 
     async init() {
         try {
-            // 서비스 초기화
+            // UI 초기화 먼저 진행 (빠른 렌더링)
+            this.initializeEventListeners();
+            this.setupCardResizeObserver();
+            
+            // 스켈레톤 UI 표시
+            this.renderSkeletonCards();
+            
+            // 서비스 초기화 (이미지 preload 제거)
             await initializeServices({
                 preloadData: true,
-                preloadImages: true
+                preloadImages: false  // 이미지는 나중에 lazy load
             });
             
             // 랜드마크 데이터 로드
             this.landmarks = await dataService.getAllLandmarks();
             
-            // UI 초기화
-            this.initializeEventListeners();
-            this.renderLocationCards();
+            // 실제 카드 렌더링
+            await this.renderLocationCards();
             this.getCurrentLocation();
-            this.setupCardResizeObserver();
             
             console.log('✅ Seoul Explorer initialized successfully');
         } catch (error) {
@@ -524,14 +529,13 @@ class SeoulExplorer {
             const landmarks = await this.getSeoulLandmarks();
             
             locationsGrid.innerHTML = landmarks.map(location => {
-                // 이미지 서비스를 통해 경로 처리
-                const imageSrc = location.image ? imageService.getLandmarkImage(location.image) : null;
-                
                 return `
                     <button class="location-card" data-location-id="${location.id}" onclick="seoulExplorer.navigateToDetail('${location.id}')">
                         <div class="location-image">
-                            ${imageSrc ? 
-                                `<img src="${imageSrc}" alt="${location.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            ${location.image ? 
+                                `<img src="${imageService.getLandmarkImage(location.image)}" 
+                                     alt="${location.name}" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                  <div class="icon-fallback" style="display:none;"><i class="${location.icon}"></i></div>` :
                                 `<div class="icon-fallback"><i class="${location.icon}"></i></div>`
                             }
@@ -1328,6 +1332,35 @@ class SeoulExplorer {
         }
     }
 
+    // 스켈레톤 UI 렌더링
+    renderSkeletonCards() {
+        const locationsGrid = document.getElementById('locationsGrid');
+        const skeletonCount = 6; // 처음에 보여줄 스켈레톤 카드 수
+        
+        const skeletonHTML = Array(skeletonCount).fill(0).map(() => `
+            <div class="location-card skeleton-card">
+                <div class="skeleton-image"></div>
+                <div class="location-info">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-subtitle"></div>
+                    <div class="skeleton-description"></div>
+                    <div class="skeleton-tags">
+                        <span class="skeleton-tag"></span>
+                        <span class="skeleton-tag"></span>
+                        <span class="skeleton-tag"></span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        locationsGrid.innerHTML = skeletonHTML;
+    }
+    
+    // [Deprecated] 이미지 lazy loading 설정 - maps와 동일한 방식으로 직접 로드하도록 변경됨
+    // setupImageLazyLoading() {
+    //     // 더 이상 사용하지 않음 - 이미지를 직접 로드
+    // }
+    
     addGuideToExplore() {
         const locationsGrid = document.getElementById('locationsGrid');
         

@@ -26,9 +26,10 @@ class ImageService {
         const maxAttempts = 50; // 5초 대기
 
         while (attempts < maxAttempts) {
-            if (window.Firebase && window.Firebase.app && firebase.storage) {
+            // window.firebase (소문자) 확인
+            if (window.firebase && window.firebase.storage) {
                 try {
-                    this.storage = firebase.storage();
+                    this.storage = window.firebase.storage();
                     this.isFirebaseReady = true;
                     
                     // Storage 기본 URL 설정
@@ -46,58 +47,49 @@ class ImageService {
             attempts++;
         }
 
-        console.warn('⚠️ Firebase Storage not available - using local images only');
+        console.warn('⚠️ Firebase Storage not available - using direct URLs');
         return false;
     }
 
     /**
      * 랜드마크 이미지 경로를 반환합니다
-     * @param {string} imageName - 이미지 파일명
+     * @param {string} imagePath - 이미지 파일 경로 (dummydata.js에서 온 원본 경로)
      * @returns {string} 완전한 이미지 경로
      */
-    getLandmarkImage(imageName) {
-        if (!imageName) return this.fallbackImage;
+    getLandmarkImage(imagePath) {
+        if (!imagePath) {
+            console.warn('⚠️ No image path provided');
+            return this.fallbackImage;
+        }
         
         // 이미 완전한 URL인 경우
-        if (this.isFullUrl(imageName)) {
-            return imageName;
+        if (this.isFullUrl(imagePath)) {
+            console.log('📸 Using full URL:', imagePath);
+            return imagePath;
         }
 
-        // Firebase Storage URL 직접 구성 (최우선)
-        if (window.CONFIG?.FIREBASE_CONFIG?.storageBucket) {
-            const storageBucket = window.CONFIG.FIREBASE_CONFIG.storageBucket;
-            const cleanImageName = imageName.startsWith('landmarks/') ? 
-                imageName.substring(10) : imageName;
-            const encodedPath = encodeURIComponent(`landmarks/${cleanImageName}`);
-            const firebaseUrl = `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedPath}?alt=media`;
-            
-            console.log(`🖼️ Firebase Storage URL for ${imageName}: ${firebaseUrl}`);
-            return firebaseUrl;
-        }
-
-        // Firebase Storage 인스턴스를 통한 URL 생성 (backup)
-        if (this.isFirebaseReady && this.storage) {
-            try {
-                const storageBucket = window.CONFIG?.FIREBASE_CONFIG?.storageBucket;
-                if (storageBucket) {
-                    const cleanImageName = imageName.startsWith('landmarks/') ? 
-                        imageName.substring(10) : imageName;
-                    const encodedPath = encodeURIComponent(`landmarks/${cleanImageName}`);
-                    return `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedPath}?alt=media`;
-                }
-            } catch (error) {
-                console.warn('⚠️ Firebase Storage URL generation failed:', error);
+        // Firebase Storage URL 직접 구성
+        try {
+            // CONFIG가 있는지 확인
+            if (window.CONFIG && window.CONFIG.FIREBASE_CONFIG && window.CONFIG.FIREBASE_CONFIG.storageBucket) {
+                const storageBucket = window.CONFIG.FIREBASE_CONFIG.storageBucket;
+                
+                // dummydata.js의 경로를 그대로 사용 (예: 'landmarks/jeju_seonangdang_kdh.png')
+                const encodedPath = encodeURIComponent(imagePath);
+                const firebaseUrl = `https://firebasestorage.googleapis.com/v0/b/${storageBucket}/o/${encodedPath}?alt=media`;
+                
+                console.log(`🖼️ Firebase URL for ${imagePath}:`, firebaseUrl);
+                return firebaseUrl;
+            } else {
+                console.warn('⚠️ CONFIG not available yet');
             }
+        } catch (error) {
+            console.error('❌ Error generating Firebase URL:', error);
         }
 
-        // CDN 사용 시 (우선순위 3)
-        if (this.cdnBaseUrl) {
-            return `${this.cdnBaseUrl}/landmarks/${imageName}`;
-        }
-
-        // 로컬 이미지 경로 (최종 fallback - 개발 모드만)
-        console.warn(`⚠️ Using local fallback for image: ${imageName}`);
-        return `${this.baseImagePath}/landmarks/${imageName}`;
+        // Fallback: 기본 placeholder 이미지 반환
+        console.warn(`⚠️ Using fallback image for: ${imagePath}`);
+        return this.fallbackImage;
     }
 
     /**
